@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus Virtual Tour - Tối Ưu Nhẹ Nhàng</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #222; /* Nền tối khi chờ load ảnh */
+        }
+
+        .pano-container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+        }
+
+        /* Chỉ còn 1 Iframe duy nhất */
+        .pano-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Nút điều hướng */
+        .nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 100;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            font-size: 40px;
+            padding: 15px 25px;
+            cursor: pointer;
+            border-radius: 50%;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .nav-btn:hover:not(:disabled) {
+            background-color: rgba(0, 0, 0, 0.9);
+            border-color: white;
+            transform: translateY(-50%) scale(1.1); /* Hiệu ứng phóng to nhẹ khi trỏ chuột */
+        }
+
+        /* Trạng thái nút bị vô hiệu hóa (khi hết ảnh) */
+        .nav-btn:disabled {
+            opacity: 0.2;
+            cursor: not-allowed;
+        }
+
+        #prevBtn { left: 30px; }
+        #nextBtn { right: 30px; }
+    </style>
+</head>
+<body>
+
+    <div class="pano-container">
+        <iframe id="mainPano" class="pano-iframe" src="https://teliportme.com/view/2565299" allowfullscreen></iframe>
+
+        <button id="prevBtn" class="nav-btn" onclick="move(-1)" disabled>&#10094;</button>
+        <button id="nextBtn" class="nav-btn" onclick="move(1)">&#10095;</button>
+    </div>
+
+    <script>
+        // Danh sách các link Panorama của bạn
+        const links = [
+            "https://teliportme.com/view/2565299", // Vị trí 0 (Ảnh 1)
+            "https://teliportme.com/view/2565298", // Vị trí 1 (Ảnh 2)
+            "https://teliportme.com/view/2565299"  // Vị trí 2 (Ảnh 3)
+        ];
+        
+        let currentIndex = 0;
+        const iframe = document.getElementById('mainPano');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+
+        function move(step) {
+            let newIndex = currentIndex + step;
+
+            // Chặn nếu vượt quá giới hạn
+            if (newIndex < 0 || newIndex >= links.length) return;
+
+            // Cập nhật index và đổi link
+            currentIndex = newIndex;
+            iframe.src = links[currentIndex];
+
+            // Làm mờ nút nếu đã ở ảnh đầu hoặc ảnh cuối
+            prevBtn.disabled = (currentIndex === 0);
+            nextBtn.disabled = (currentIndex === links.length - 1);
+        }
+    </script>
+
+</body>
+</html>
