@@ -1,0 +1,58 @@
+version: "3.9"
+
+services:
+
+  # ── Valhalla routing engine ───────────────────────────────────────────────
+  valhalla:
+    image: ghcr.io/gis-ops/docker-valhalla/valhalla:latest
+    container_name: localnavbot-valhalla
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./data/valhalla:/custom_files
+      - valhalla_tiles:/valhalla_tiles
+    environment:
+      - use_tiles_ignore_pbf=True      # Use pre-built tiles if available
+      - serve_tiles=True
+      - build_elevation=False
+      - build_admins=True
+      - build_time_zones=True
+      # Download OSM extract for Vietnam (Ho Chi Minh City area)
+      # Replace with your own .osm.pbf for offline use:
+      # - pbf_url=https://download.geofabrik.de/asia/vietnam-latest.osm.pbf
+      - pbf_url=https://download.geofabrik.de/asia/vietnam-latest.osm.pbf
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ── LocalNavBot API ───────────────────────────────────────────────────────
+  navbot:
+    build: .
+    container_name: localnavbot-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - VALHALLA_URL=http://valhalla:8002
+      - DEVICE=cuda
+      - LLM_PROVIDER=${LLM_PROVIDER:-anthropic}
+      - LLM_API_KEY=${LLM_API_KEY:-}
+      - LLM_MODEL=${LLM_MODEL:-claude-sonnet-4-20250514}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    depends_on:
+      valhalla:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  valhalla_tiles:

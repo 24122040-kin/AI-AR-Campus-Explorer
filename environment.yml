@@ -1,0 +1,84 @@
+name: localnavbot
+
+# This env intentionally keeps only binary-heavy packages in Conda.
+# Everything pure-Python or fast-moving stays in pip below.
+#
+# Why the old env was slow on Windows:
+# - it mixed defaults + conda-forge + pytorch + nvidia in one solve
+# - it left several heavy geo packages loosely pinned
+# - it asked Conda to reason about a very wide dependency graph
+#
+# Faster strategy:
+# - use only the channels we actually need
+# - keep channel order stable for strict priority
+# - pin the expensive binary stack to a compatible band
+
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - nodefaults
+
+dependencies:
+  - python=3.10
+  - pip
+
+  # Core numeric stack
+  - numpy=1.26.*
+  - scipy=1.14.*
+  - scikit-learn=1.5.*
+
+  # Vision / media
+  - pillow=10.*
+
+  # PyTorch
+  - pytorch=2.5.*
+  - torchvision=0.20.*
+  - pytorch-cuda=12.1
+
+  # Geo stack
+  - shapely=2.0.*
+  - pyproj=3.6.*
+  - geopandas=1.0.*
+  - gdal=3.9.*
+  - libspatialindex=1.9.*
+
+  - pip:
+      - transformers>=4.40,<5
+      - einops>=0.7,<1
+      - timm>=0.9,<1
+
+      # Keep these in pip on Windows to avoid Conda solver conflicts.
+      - opencv-python>=4.10,<5
+      - faiss-cpu>=1.9,<2
+
+      - osmnx>=1.9,<2
+      - networkx>=3.2,<4
+      - folium>=0.16,<1
+      - requests>=2.31,<3
+
+      - sqlalchemy>=2.0,<3
+      - aiosqlite>=0.20,<1
+      - geoalchemy2>=0.14,<1
+
+      - piexif>=1.1,<2
+
+      - anthropic>=0.28,<1
+      - openai>=1.25,<2
+      - httpx>=0.27,<1
+
+      - fastapi>=0.111,<1
+      - uvicorn[standard]>=0.29,<1
+      - python-multipart>=0.0.9,<1
+      - websockets>=12,<16
+      - aiofiles>=23.2,<25
+
+      - pydantic>=2.7,<3
+      - pydantic-settings>=2.2,<3
+      - rich>=13.7,<15
+      - typer>=0.12,<1
+      - python-dotenv>=1.0,<2
+      - tqdm>=4.66,<5
+      - loguru>=0.7,<1
+      - ultralytics>=8.2,<9
+      - easyocr>=1.7,<2

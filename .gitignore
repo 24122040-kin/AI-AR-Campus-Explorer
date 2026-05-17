@@ -1,0 +1,84 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.hypothesis/
+
+# Environment
+.env
+.venv
+*.env.local
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+data/navbot.db
+
+# Cache
+cache/
+*.cache
+data/osm_cache/
+
+# Images (test data)
+data/images/*.jpg
+data/images/*.png
+data/detections/*.jpg
+data/detections/*.png
+data/realtime_frames/*.jpg
+
+# Models (large files)
+data/ocr_models/*.pth
+data/ocr_models/*.zip
+data/yolo/*.pt
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Documentation temp files
+~$*.docx

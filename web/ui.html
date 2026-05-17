@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="theme-color" content="#0f172a"/>
+<title>LocalNavBot — ĐHKHTN CS2</title>
+<link rel="stylesheet" href="/static/css/app.css?v=3"/>
+</head>
+<body>
+
+<!-- ── Help overlay ── -->
+<div class="help-overlay" id="help-overlay" style="display:none" onclick="if(event.target===this)closeHelp()">
+  <div class="help-box">
+    <button class="help-close" onclick="closeHelp()">✕</button>
+    <h3 id="help-title">Hướng dẫn</h3>
+    <div id="help-content"></div>
+  </div>
+</div>
+
+<!-- ── VPS image picker modal ── -->
+<div class="help-overlay" id="vps-modal" style="display:none" onclick="if(event.target===this)closeVpsModal()">
+  <div class="help-box" style="max-width:300px">
+    <button class="help-close" onclick="closeVpsModal()">✕</button>
+    <h3 id="vps-modal-title">📷 Nhận diện vị trí</h3>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:12px">
+      Chụp hoặc chọn ảnh địa điểm để VPS tự nhận diện và điền vào ô tìm đường.
+    </p>
+    <button class="btn primary" onclick="vpsCaptureLive()" style="margin-bottom:6px">
+      📸 Chụp trực tiếp bằng camera
+    </button>
+    <button class="btn secondary" onclick="el('vps-file-input').click()">
+      🖼️ Chọn ảnh từ thư viện
+    </button>
+    <input type="file" id="vps-file-input" accept="image/*" style="display:none"
+           onchange="vpsFromFile(this)"/>
+    <!-- Live camera for VPS -->
+    <div id="vps-cam-wrap" style="display:none;margin-top:10px">
+      <video id="vps-cam" autoplay playsinline muted
+             style="width:100%;border-radius:8px;background:#000;max-height:200px"></video>
+      <button class="btn teal" onclick="vpsSnapAndQuery()" style="margin-top:6px">
+        📸 Chụp & nhận diện
+      </button>
+      <button class="btn danger" onclick="vpsStopCam()" style="margin-top:4px">
+        ⏹ Dừng camera
+      </button>
+    </div>
+    <!-- VPS result inside modal -->
+    <div id="vps-modal-result" style="display:none;margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- ── Floor calibration modal ── -->
+<div class="help-overlay" id="floor-modal" style="display:none" onclick="if(event.target===this)closeFloorModal()">
+  <div class="help-box" style="max-width:280px">
+    <button class="help-close" onclick="closeFloorModal()">✕</button>
+    <h3>🏢 Hiệu chỉnh tầng</h3>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">
+      Nhập tầng bạn đang đứng để hệ thống làm baseline cho cảm biến.
+    </p>
+    <label>Tầng hiện tại</label>
+    <input id="floor-cal-input" type="number" min="1" max="50" value="1"/>
+    <button class="btn primary" onclick="calibrateFloor()" style="margin-top:8px">
+      ✅ Xác nhận tầng
+    </button>
+  </div>
+</div>
+
+<!-- ── Header ── -->
+<header>
+  <div class="logo">🗺️</div>
+  <h1>LocalNavBot</h1>
+  <span class="badge" id="b-vpr">VPR ⏳</span>
+  <span class="badge" id="b-rt">OSM ⏳</span>
+  <div class="hdr-right">
+    <span id="hdr-stat" style="font-size:11px;color:var(--text3)">—</span>
+    <button class="icon-btn" onclick="toggleSidebar()" title="Sidebar">☰</button>
+    <button class="icon-btn" onclick="toggleMap()" title="Bản đồ">🗺</button>
+    <button class="icon-btn" id="tts-btn" onclick="_toggleTts()" title="Bật/tắt đọc to">🔊</button>
+    <button class="icon-btn" onclick="getGPS()" title="GPS">📍</button>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- ── Sidebar ── -->
+  <div class="sidebar" id="sidebar">
+    <div class="tabs">
+      <div class="tab active" onclick="tab('nav')">🧭 Đường</div>
+      <div class="tab" onclick="tab('data')">➕ Dữ liệu</div>
+      <div class="tab" onclick="tab('traffic')">🚦 Giao thông</div>
+      <div class="tab" onclick="tab('stats')">📊 Hệ thống</div>
+    </div>
+
+    <div class="tab-body">
+
+      <!-- ══ NAV TAB ══ -->
+      <div class="tab-pane active" id="tp-nav">
+
+        <!-- Module: Tìm đường + AR -->
+        <div class="module">
+          <div class="module-header" onclick="toggleModule('mod-route')">
+            <span class="module-icon">🔍</span>
+            <span class="module-title">Tìm đường & AR Navigation</span>
+            <button class="module-help" onclick="event.stopPropagation();showHelp('route')" title="Hướng dẫn">?</button>
+            <span class="module-chevron open" id="chev-mod-route">▼</span>
+          </div>
+          <div class="module-body open" id="mod-route">
+            <div class="route-plan-strip">
+              <strong>Tuyến lái xe / OSM</strong> — chỉ dùng <em>địa điểm đã lưu</em> trong database (bảng locations).
+              Gõ tên và <b>chọn đúng một dòng trong gợi ý</b>, hoặc mở bản đồ nội bộ và chọn 2 marker / click gần marker (≤55m).
+            </div>
+            <label>Điểm xuất phát <span style="color:var(--text3);font-weight:400">(để trống = GPS)</span></label>
+            <div style="display:flex;gap:6px">
+              <input id="n-from" placeholder="Gõ tên → chọn trong danh sách…" style="flex:1" autocomplete="off"
+                     oninput="onRouteInput('n-from')" onblur="setTimeout(()=>_acHide('n-from'),200)"/>
+              <button type="button" class="icon-btn" onclick="vpsIdentify('from')" title="Chụp ảnh (VPS)" style="font-size:13px;padding:6px 9px;flex-shrink:0">📷</button>
+            </div>
+            <label>Điểm đến *</label>
+            <div style="display:flex;gap:6px">
+              <input id="n-to" placeholder="Gõ tên → chọn trong danh sách…" style="flex:1" autocomplete="off"
+                     oninput="onRouteInput('n-to')" onblur="setTimeout(()=>_acHide('n-to'),200)"/>
+              <button type="button" class="icon-btn" onclick="vpsIdentify('to')" title="Chụp ảnh (VPS)" style="font-size:13px;padding:6px 9px;flex-shrink:0">📷</button>
+            </div>
+            <button type="button" class="btn secondary route-map-btn" onclick="openLocalMapRoutePicker()">🗺️ Chọn 2 điểm trên bản đồ nội bộ</button>
+            <label>Giờ xuất phát</label>
+            <input id="n-time" type="time"/>
+            <label>Thời tiết (gợi ý routing)</label>
+            <select id="n-weather">
+              <option value="auto">Tự động / bình thường</option>
+              <option value="sunny">Nắng ráo</option>
+              <option value="rain">Đang mưa - ưu tiên đường có mái che</option>
+            </select>
+            <div class="row-btns" style="margin-top:8px">
+              <button type="button" class="btn primary" onclick="findRoute()">🔍 Tìm đường</button>
+              <button type="button" class="btn secondary" onclick="askRouteBot()">💬 Hỏi bot</button>
+            </div>
+            <div id="route-status-line" class="route-status-line" aria-live="polite"></div>
+            <div id="route-result-host" style="display:none;margin-top:8px;border-radius:8px;overflow:hidden;border:1px solid var(--border)"></div>
+            <!-- VPS result panel -->
+            <div id="vps-result-panel" style="display:none;margin-top:8px;padding:8px;background:var(--bg3);border-radius:8px;border:1px solid var(--border)">
+              <div style="font-size:11px;color:var(--text3);margin-bottom:4px">📍 VPS nhận diện:</div>
+              <div id="vps-result-content"></div>
+            </div>
+            <!-- AR integrated here -->
+            <div id="ar-route-panel" style="display:none;margin-top:8px;padding:8px;background:var(--bg3);border-radius:8px;border:1px solid var(--border)">
+              <div style="font-size:11px;color:var(--text3);margin-bottom:6px">📷 AR Navigation (camera + la bàn)</div>
+              <div class="row-btns">
+                <button class="btn teal" id="btn-ar-nav" onclick="toggleAR()">📷 Bật AR Navigation</button>
+                <button class="btn secondary" onclick="openIso()">⭕ Isochrone</button>
+              </div>
+              <button class="btn secondary" id="btn-ar-passthrough" onclick="togglePassthroughAR()" type="button" style="display:none;margin-top:6px" aria-hidden="true">Passthrough</button>
+              <div style="font-size:11px;color:var(--text3);margin-top:6px">
+                Mặc định: camera thật + chỉ đường. Cần GPS và đã «Tìm đường». WebXR / la bàn 3D tách — không tự bật.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Module: Tìm kiếm địa điểm -->
+        <div class="module">
+          <div class="module-header" onclick="toggleModule('mod-search')">
+            <span class="module-icon">📍</span>
+            <span class="module-title">Tìm kiếm địa điểm</span>
+            <button class="module-help" onclick="event.stopPropagation();showHelp('search')" title="Hướng dẫn">?</button>
+            <span class="module-chevron open" id="chev-mod-search">▼</span>
+          </div>
+          <div class="module-body open" id="mod-search">
+            <div style="display:flex;gap:6px">
+              <input id="q-search" placeholder="Tòa B, thư viện, căng tin..."
+                     oninput="debounceSearch()" style="flex:1"/>
+              <button class="icon-btn" onclick="doSearch()" style="font-size:13px;padding:7px 10px">🔍</button>
+            </div>
+            <div id="search-out" style="margin-top:8px"></div>
+          </div>
+        </div>
+
+      </div><!-- /tp-nav -->
+
+      <!-- ══ DATA TAB ══ -->
+      <div class="tab-pane" id="tp-data">
+
+        <!-- Module: Thêm địa điểm + ảnh -->
+        <div class="module">
+          <div class="module-header" onclick="toggleModule('mod-addloc')">
+            <span class="module-icon">📌</span>
+            <span class="module-title">Thêm địa điểm + ảnh</span>
+            <button class="module-help" onclick="event.stopPropagation();showHelp('addloc')" title="Hướng dẫn">?</button>
+            <span class="module-chevron" id="chev-mod-addloc">▼</span>
+          </div>
+          <div class="module-body" id="mod-addloc">
+            <label>Tên địa điểm *</label>
+            <input id="d-name" placeholder="Tòa B, Thư viện, Căng tin..."/>
+            <div class="form-row">
+              <div>
+                <label>Lat</label>
+                <input id="d-lat" type="number" step="0.000001" placeholder="GPS tự điền"/>
+              </div>
+              <div>
+                <label>Lon</label>
+                <input id="d-lon" type="number" step="0.000001" placeholder="GPS tự điền"/>
+              </div>
+            </div>
+            <div class="form-row">
+              <div>
+                <label>Tầng</label>
+                <input id="d-floor" type="number" min="1" max="50" value="1"/>
+              </div>
+              <div>
+                <label>Quan trọng 1–5</label>
+                <input id="d-imp" type="range" min="1" max="5" value="3"/>
+              </div>
+            </div>
+            <label>Loại</label>
+            <select id="d-cat">
+              <option value="general">Chung</option>
+              <option value="classroom">Phòng học</option>
+              <option value="lab">Phòng thí nghiệm</option>
+              <option value="office">Văn phòng / Phòng ban</option>
+              <option value="library">Thư viện</option>
+              <option value="canteen">Căng tin / Quán ăn</option>
+              <option value="toilet">Nhà vệ sinh</option>
+              <option value="entrance">Cổng / Lối vào</option>
+              <option value="parking">Bãi xe</option>
+              <option value="landmark">Điểm mốc</option>
+              <option value="other">Khác</option>
+            </select>
+            <label>Mô tả / Đặc điểm nhận dạng</label>
+            <textarea id="d-desc" rows="2" placeholder="Cửa màu xanh, gần cầu thang A..."></textarea>
+
+            <!-- Multi-image upload -->
+            <label style="margin-top:10px">Ảnh địa điểm (1–5 ảnh)</label>
+            <div style="font-size:11px;color:var(--text3);margin-bottom:6px">
+              Ảnh đầu tiên = ảnh chính hiển thị khi search. Các ảnh còn lại dùng cho nhận diện VPS.
+            </div>
+            <input type="file" id="d-imgs" accept="image/*" multiple
+                   style="font-size:12px;background:transparent;border:none;padding:0"
+                   onchange="previewLocationImages(this)"/>
+            <div class="img-preview-grid" id="d-img-preview"></div>
+            <div class="toggle-row">
+              <input type="checkbox" id="d-auto"/>
+              <span>Auto-caption bằng AI</span>
+            </div>
+            <button class="btn primary" onclick="addLocationWithImages()">➕ Thêm địa điểm</button>
+          </div>
+        </div>
+
+        <!-- Module: Thêm đường / hành lang -->
+        <div class="module">
+          <div class="module-header" onclick="toggleModule('mod-addedge')">
+            <span class="module-icon">🛤️</span>
+            <span class="module-title">Thêm đường / hành lang</span>
+            <button class="module-help" onclick="event.stopPropagation();showHelp('addedge')" title="Hướng dẫn">?</button>
+            <span class="module-chevron" id="chev-mod-addedge">▼</span>
+          </div>
+          <div class="module-body" id="mod-addedge">
+            <div style="font-size:12px;color:var(--text2);margin-bottom:8px">
+              Mở Local Map → chọn 2 điểm đã tạo → điền thông tin bên dưới → Lưu.
+            </div>
+            <button class="btn teal" onclick="openLocalMapForEdge()" style="width:100%;margin-bottom:8px">
+              🗺️ Mở Map để chọn 2 điểm
+            </button>
+            <!-- Filled automatically when 2 points selected on map -->
+            <div id="edge-points-display" style="display:none;padding:8px;background:var(--bg3);border-radius:6px;margin-bottom:8px;font-size:12px">
+              <div>📍 <span id="edge-pt-a" style="color:var(--green)">Chưa chọn điểm A</span></div>
+              <div style="margin-top:4px">📍 <span id="edge-pt-b" style="color:var(--red)">Chưa chọn điểm B</span></div>
+            </div>
+            <label>Điểm A</label>
+            <input id="e-a" placeholder="Gõ tên địa điểm đã tạo..." oninput="onEdgePlaceInput('e-a')" autocomplete="off"/>
+            <label>Điểm B</label>
+            <input id="e-b" placeholder="Gõ tên địa điểm đã tạo..." oninput="onEdgePlaceInput('e-b')" autocomplete="off"/>
+            <label>Tên đường</label>
+            <input id="e-name" placeholder="Hành lang tầng 2, Cầu thang A..."/>
+            <label>Loại đường</label>
+            <select id="e-type">
+              <option value="corridor">🏢 Hành lang trong nhà</option>
+              <option value="alley">🛤️ Hẻm / Lối đi ngoài trời</option>
+              <option value="path">🌿 Đường mòn</option>
+              <option value="shortcut">⚡ Đường tắt</option>
+              <option value="stairs">🪜 Cầu thang</option>
+              <option value="elevator">🛗 Thang máy</option>
+              <option value="ramp">📐 Đường dốc / Ramp</option>
+              <option value="bridge">🌉 Cầu / Lối đi trên cao</option>
+            </select>
+            <div class="form-row" style="margin-top:8px">
+              <div>
+                <label>Bề mặt</label>
+                <select id="e-surface">
+                  <option value="concrete">Bê tông</option>
+                  <option value="tile">Gạch lát</option>
+                  <option value="grass">Cỏ / Đất</option>
+                  <option value="gravel">Sỏi</option>
+                  <option value="wood">Gỗ</option>
+                </select>
+              </div>
+              <div>
+                <label>Độ dốc (°)</label>
+                <input id="e-slope" type="number" min="-45" max="45" value="0" step="1"/>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="toggle-row">
+                <input type="checkbox" id="e-covered" checked/>
+                <span>Có mái che</span>
+              </div>
+              <div class="toggle-row">
+                <input type="checkbox" id="e-lighting" checked/>
+                <span>Có đèn</span>
+              </div>
+            </div>
+            <label>Độ rộng (m, tuỳ chọn)</label>
+            <input id="e-width" type="number" min="0.3" max="20" step="0.1" placeholder="Ví dụ: 2.5"/>
+            <button class="btn green" id="btn-save-edge" onclick="addEdge()" disabled style="opacity:0.5">
+              ➕ Lưu đường
+            </button>
+          </div>
+        </div>
+
+        <!-- Module: Local Map Editor -->
+        <div class="module">
+          <div class="module-header" onclick="toggleModule('mod-localmap')">
+            <span class="module-icon">🗺️</span>
+            <span class="module-title">Bản đồ nội bộ ĐHKHTN CS2</span>
+            <button class="module-help" onclick="event.stopPropagation();showHelp('localmap')" title="Hướng dẫn">?</button>
+            <span class="module-chevron" id="chev-mod-localmap">▼</span>
+          </div>
+          <div class="module-body" id="mod-localmap">
+            <div style="font-size:12px;color:var(--text2);margin-bottom:8px">
+              Xem địa điểm theo tầng; chế độ <b>🚗 Tuyến 2 điểm</b> gửi về form tìm đường; <b>➕ Nối cạnh</b> cho đường nội bộ; <b>🚶 Tracking</b> để vẽ path đi bộ.
+            </div>
+            <button class="btn teal" onclick="openLocalMap()" style="width:100%">
+              🗺️ Mở Local Map Editor
+            </button>
+          </div>
+        </div>
+
+        <!-- Module: Upload ảnh nhanh -->
+        <div class="module">
+          <div class="module-header" onclick="toggleModule('mod-upload')">
+            <span class="module-icon">📤</span>
+            <span class="module-title">Import ảnh GPS/VPS hàng loạt</span>
+            <button class="module-help" onclick="event.stopPropagation();showHelp('upload')" title="Hướng dẫn">?</button>
+            <span class="module-chevron" id="chev-mod-upload">▼</span>
+          </div>
+          <div class="module-body" id="mod-upload">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:6px">
+              Dùng để nạp nhanh ảnh đã có GPS EXIF vào database/VPS. Nếu chỉ thêm một địa điểm cụ thể, dùng form "Thêm địa điểm + ảnh" ở trên.
+            </div>
+            <input type="file" id="u-files" accept="image/*" multiple
+                   style="font-size:12px;background:transparent;border:none;padding:0"/>
+            <input id="u-cap" placeholder="Mô tả (tuỳ chọn)" style="margin-top:6px"/>
+            <div class="toggle-row">
+              <input type="checkbox" id="u-auto"/>
+              <span>Auto-caption bằng AI</span>
+            </div>
+            <button class="btn primary" onclick="uploadImgs()">📤 Upload</button>
+          </div>
+        </div>
+
+        <!-- Module: Camera realtime -->
+        <div class="module">
+          <div class="module-header" onclick="toggleModule('mod-camera')">
+            <span class="module-icon">📷</span>
+            <span class="module-title">Camera — Nhận diện vị trí</span>
+            <button class="module-help" onclick="event.stopPropagation();showHelp('camera')" title="Hướng dẫn">?</button>
+            <span class="module-chevron" id="chev-mod-camera">▼</span>
+          </div>
+          <div class="module-body" id="mod-camera">
+            <video id="cam-preview" autoplay playsinline muted
+                   style="width:100%;border:1px solid var(--border);border-radius:8px;background:#000;max-height:160px"></video>
+            <div class="row-btns" style="margin-top:8px">
+              <button class="btn secondary" onclick="startCameraCapture()">🎥 Mở camera</button>
+              <button class="btn secondary" onclick="captureFrame()">📸 Chụp & nhận dạng</button>
+            </div>
+            <button class="btn danger" onclick="stopCameraCapture()" style="margin-top:6px">⏹ Dừng camera</button>
+            <div id="cam-meta" style="margin-top:6px;font-size:11px;color:var(--text3)">Frames: 0</div>
+          </div>
+        </div>
+
+      </div><!-- /tp-data -->
+
+      <!-- ══ TRAFFIC TAB ══ -->
+      <div class="tab-pane" id="tp-traffic">
+
+        <div class="module">
+          <div class="module-header" onclick="toggleModule('mod-traffic-chart')">
+            <span class="module-icon">📊</span>
+            <span class="module-title">Biểu đồ tắc nghẽ n 24h</span>
+            <button class="module-help" onclick="event.stopPropagation();showHelp('traffic')" title="Hướng dẫn">?</button>
+            <span class="module-chevron open" id="chev-mod-traffic-chart">▼</span>
+          </div>
+          <div class="module-body open" id="mod-traffic-chart">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:8px">
+              Mức độ đông đúc theo giờ trong ngày.
+              — Xanh = thông thoáng, Vàng = bình thường, Đỏ = tắc nghẽ n.
+              Dữ liệu từ báo cáo của người dùng + pattern mặc định.
+            </div>
+            <div id="traffic-html"></div>
+            <div class="row-btns" style="margin-top:8px">
+              <button class="btn secondary" onclick="loadTraffic()">🔄 Cập nhật</button>
+              <button class="btn secondary" onclick="bestTime()">⏰ Giờ tốt nhất</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="module">
+          <div class="module-header" onclick="toggleModule('mod-traffic-report')">
+            <span class="module-icon">📡</span>
+            <span class="module-title">Báo cáo tình trạng đường</span>
+            <button class="module-help" onclick="event.stopPropagation();showHelp('traffic-report')" title="Hướng dẫn">?</button>
+            <span class="module-chevron" id="chev-mod-traffic-report">▼</span>
+          </div>
+          <div class="module-body" id="mod-traffic-report">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:8px">
+              Báo cáo tại vị trí GPS hiện tại. Ảnh hưởng đến thuật toán tìm đường.
+            </div>
+            <label>Giờ (0–23) — để trống = giờ hiện tại</label>
+            <input id="tc-h" type="number" min="0" max="23" placeholder="Tự điền giờ hiện tại"/>
+            <label>Mức độ đông đúc</label>
+            <div style="display:flex;align-items:center;gap:8px">
+              <input id="tc-c" type="range" min="0" max="1" step="0.05" value="0.5" style="flex:1"
+                     oninput="el('tc-c-label').textContent=this.value<0.3?'🟢 Thông':this.value<0.6?'🟡 Vừa':this.value<0.85?'🟠 Đông':'🔴 Kẹt'"/>
+              <span id="tc-c-label" style="font-size:12px;color:var(--amber);width:64px;text-align:right">🟡 Vừa</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-top:2px">
+              <span>Thông thoáng</span><span>Kẹt xe</span>
+            </div>
+            <label style="margin-top:10px">🌧️ Thời tiết</label>
+            <div style="display:flex;align-items:center;gap:8px">
+              <input id="tc-w" type="range" min="0" max="1" step="0.1" value="0" style="flex:1"
+                     oninput="updateWeatherLabel(this.value)"/>
+              <span id="tc-w-label" style="font-size:12px;color:var(--teal);width:64px;text-align:right">☀️ Nắng</span>
+            </div>
+            <div style="font-size:11px;color:var(--text3);margin-top:4px">
+              Khi mưa, thuật toán ưu tiên đường có mái che ☂️
+            </div>
+            <button class="btn primary" onclick="reportTraffic()" style="margin-top:10px">📡 Báo cáo</button>
+          </div>
+        </div>
+
+      </div><!-- /tp-traffic -->
+
+      <!-- ══ STATS TAB ══ -->
+      <div class="tab-pane" id="tp-stats">
+
+        <div class="module">
+          <div class="module-header" onclick="toggleModule('mod-stats')">
+            <span class="module-icon">📈</span>
+            <span class="module-title">Thống kê hệ thống</span>
+            <button class="module-help" onclick="event.stopPropagation();showHelp('stats')" title="Hướng dẫn">?</button>
+            <span class="module-chevron open" id="chev-mod-stats">▼</span>
+          </div>
+          <div class="module-body open" id="mod-stats">
+            <div class="stat-grid" id="stat-grid">
+              <div class="stat"><div class="stat-v" id="sv-loc">-</div><div class="stat-l">Địa điểm</div></div>
+              <div class="stat"><div class="stat-v" id="sv-img">-</div><div class="stat-l">Ảnh</div></div>
+              <div class="stat"><div class="stat-v" id="sv-poi">-</div><div class="stat-l">POI</div></div>
+              <div class="stat"><div class="stat-v" id="sv-vpr">-</div><div class="stat-l">VPR index</div></div>
+            </div>
+            <div class="row-btns" style="margin-top:8px">
+              <button class="btn secondary" onclick="loadStatus()">🔄 Refresh</button>
+              <button class="btn amber" onclick="vprRebuild()">🔨 Rebuild VPR</button>
+            </div>
+            <div id="sys-info" style="font-size:11px;color:var(--text3);line-height:1.8;margin-top:10px"></div>
+          </div>
+        </div>
+
+      </div><!-- /tp-stats -->
+
+    </div>
+  </div><!-- /sidebar -->
+
+  <!-- ── Chat ── -->
+  <div class="chat">
+    <div class="gps-bar">
+      <div class="dot" id="gps-dot"></div>
+      <span id="gps-txt">GPS: chưa xác định</span>
+      <span id="floor-hud"
+            style="margin-left:8px;font-size:11px;background:var(--bg3);padding:2px 8px;border-radius:12px;color:var(--teal);display:none;cursor:pointer"
+            onclick="openFloorModal()" title="Bấm để hiệu chỉnh tầng">🏢 Tầng 1</span>
+      <span id="vio-hud"
+            style="margin-left:6px;font-size:11px;background:var(--bg3);padding:2px 8px;border-radius:12px;color:var(--text3);display:none">📡 VIO</span>
+      <span id="nav-state"
+            style="margin-left:auto;font-size:11px;background:var(--bg3);padding:2px 8px;border-radius:12px;color:var(--text3)">idle</span>
+    </div>
+
+    <div class="msgs" id="msgs">
+      <div class="msg sys">🗺️ LocalNavBot — ĐHKHTN Cơ sở 2 Linh Trung</div>
+      <div class="msg bot">
+        Xin chào! Tôi hỗ trợ điều hướng trong khuôn viên trường.<br><br>
+        <strong>🔍 Tìm đường</strong> — Tab 🧭 → chỉ chọn địa điểm <b>đã lưu trong DB</b> (gợi ý hoặc bản đồ 2 điểm) → Tìm đường<br>
+        <strong>🥽 AR Navigation</strong> — Tìm đường xong → bấm "Bật AR Cam" → mũi tên + giọng nói<br>
+        <strong>📍 Tìm địa điểm</strong> — Gõ tên vào ô tìm kiếm → chọn → Đi đến<br>
+        <strong>📌 Thêm địa điểm</strong> — Tab ➕ → điền tên + tầng + ảnh<br>
+        <strong>💬 Hỏi bot</strong> — Gõ bất kỳ câu hỏi nào<br><br>
+        <span style="color:var(--text3);font-size:12px">💡 Bấm <b>?</b> trên mỗi module để xem hướng dẫn chi tiết.</span>
+      </div>
+    </div>
+
+    <div class="input-row">
+      <input type="file" id="img-chat" accept="image/*" style="display:none" onchange="setChatImg(this)"/>
+      <button class="icon-btn" onclick="document.getElementById('img-chat').click()" title="Gửi ảnh">📷</button>
+      <button class="icon-btn" id="mic-btn" onclick="SpeechModule.toggleListening()" title="Nhấn để nói">🎤</button>
+      <textarea id="ui-msg" rows="1" placeholder="Nhắn tin, hỏi đường, hoặc gửi ảnh…"
+                onkeydown="handleKey(event)" oninput="autoH(this)"></textarea>
+      <button class="icon-btn" id="stop-btn" onclick="stopBot()" title="Dừng bot"
+              style="display:none;color:var(--red);font-size:16px">⏹</button>
+      <button class="send-btn" onclick="sendMsg()">↑</button>
+    </div>
+  </div><!-- /chat -->
+
+  <!-- ── Map panel (mở = phủ toàn màn hình) ── -->
+  <div class="map-wrap" id="map-wrap" aria-hidden="true">
+    <div class="map-toolbar">
+      <span class="map-toolbar-title">🗺️ Bản đồ</span>
+      <button type="button" class="icon-btn" onclick="mapFull()" title="Tải lại OSM quanh GPS">🗺</button>
+      <input id="mf" placeholder="Từ…" style="width:min(100px,22vw)"/>
+      <input id="mt" placeholder="Đến…"/>
+      <button type="button" class="icon-btn" onclick="mapRoute()" title="Xem tuyến nhanh trong iframe">🔍</button>
+      <button type="button" class="icon-btn map-close-btn" onclick="mapClose()" title="Đóng (Esc)">✕ Đóng</button>
+    </div>
+    <iframe id="map-frame" src="" title="Map"></iframe>
+  </div>
+
+</div><!-- /.main -->
+
+<!-- ── Toast ── -->
+<div class="toast" id="toast"></div>
+
+<!-- ── Alert banners ── -->
+<div id="alert-banner-container"></div>
+
+<!-- ── AR overlay ── -->
+<div id="ar-overlay"><canvas id="ar-canvas"></canvas></div>
+<div id="ar-compass-overlay">
+  <canvas id="ar-compass-canvas" width="140" height="140"></canvas>
+</div>
+<div id="ar-instruction"></div>
+<div id="ar-mode-badge"></div>
+<div id="ar-warning"></div>
+<button id="ar-close-btn" onclick="closeAllAR()">✕ Thoát AR</button>
+
+<!-- ── Floor transition overlay ── -->
+<div id="ar-floor-transition" class="ar-floor-transition-overlay">
+  <!-- Populated by JS when approaching stairs/elevator -->
+</div>
+
+<!-- ── Scripts ── -->
+<script src="/static/js/three.min.js"></script>
+<script src="/ar_renderer.js"></script>
+<script src="/vio_client.js"></script>
+<script src="/static/js/vpr_reloc.js"></script>
+<script src="/static/js/globals.js"></script>
+<script src="/static/js/floor.js"></script>
+<script src="/static/js/gps.js"></script>
+<script src="/static/js/websocket.js"></script>
+<script src="/static/js/speech.js"></script>
+<script src="/static/js/chat.js"></script>
+<script src="/static/js/route.js"></script>
+<script src="/static/js/data.js"></script>
+<script src="/static/js/traffic.js"></script>
+<script src="/static/js/camera.js"></script>
+<script src="/static/js/ar.js"></script>
+<script src="/static/js/ar_enhanced.js"></script>
+<script src="/static/js/vio.js"></script>
+<script src="/static/js/vps.js"></script>
+<script src="/static/js/layout.js"></script>
+
+</body>
+</html>
