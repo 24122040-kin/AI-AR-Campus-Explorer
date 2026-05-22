@@ -41,18 +41,25 @@ AI-AR-Campus-Explorer/
 
 1. Thiết lập Backend (FastAPI)
 - Cài các thư viện cần thiết (terminal):
+
     pip install -r requirements.txt
 - Thêm API key (file .env):
+
     GEMINI_API_KEY=your_gemini_api_key_here
+  
     DATABASE_URL=sqlite:///./campus_explorer.db
 - Chạy backend (terminal):
+
     uvicorn app.main:app --reload (muốn dừng chạy thì bấm Ctrl C)
 
 2. Chạy Web Admin
 - Di chuyển đến thư mục frontend (terminal):
+
     cd frontend
 - Chạy frontend (terminal):
+
     npm install (nếu chưa cài npm)
+
     npm run dev (muốn dừng chạy thì bấm Ctrl C)
 
 3. Chạy Web App
