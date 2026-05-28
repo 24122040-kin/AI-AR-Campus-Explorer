@@ -132,9 +132,27 @@ def get_building_profile(G: nx.Graph, node_id: str) -> dict:
         return {}
 
     data = G.nodes[node_id]
-    catalog = _BUILDING_PROFILES.get(node_id, {})
-    services = data.get("services") or catalog.get("services", [])
+    
+    # Hỗ trợ tìm kiếm profile cho các phòng/tầng (fallback về tòa nhà gốc)
+    base_node = node_id.split("_")[0] if "_" in node_id else node_id
+    catalog = _BUILDING_PROFILES.get(node_id) or _BUILDING_PROFILES.get(base_node) or {}
+    
+    # Tinh chỉnh dịch vụ cho phòng cụ thể
+    services = list(data.get("services") or catalog.get("services", []))
+    if "_" in node_id:
+        room_name = node_id.split("_")[-1]
+        if "Căn tin" in room_name:
+            services = [s for s in services if s["id"] == "canteen"]
+        elif "Thư viện" in room_name:
+            services = [s for s in services if s["id"] == "library"]
+        elif "Quầy giáo trình" in room_name:
+            services = [s for s in services if s["id"] == "bookstore"]
+        elif "Tự học" in room_name:
+            services = [s for s in services if s["id"] in ("self_study", "group_study", "group_quiet")]
+            
     tagline = data.get("tagline") or catalog.get("tagline", "")
+    if "_" in node_id:
+        tagline = f"{node_id.split('_')[-1]} — thuộc {base_node}"
 
     features = data.get("features", {})
     amenity_tags = []

@@ -57,11 +57,11 @@ def pathfinding_optimizer(
     weather: str = "normal",
     current_time: str = None,
     use_gnn: bool = True,
+    preference: str = "fastest",
 ) -> Tuple[Optional[List], bool]:
     """
     A* tìm đường tối ưu — tích hợp GNN attention, tránh nắng/mưa, né khu đông.
-
-    Chi phí cạnh = f(GAT attention, crowd, mái che, trạng thái sửa chữa).
+    Hỗ trợ lộ trình ưu tiên: nhanh nhất, mái che, xe lăn.
     """
     for node in (start_node, end_node):
         if node not in G.nodes:
@@ -83,14 +83,56 @@ def pathfinding_optimizer(
             use_gnn = False
 
     def custom_weight(u, v, edge_data):
-        if use_gnn and crowd_fn:
-            return gnn_edge_cost(G, u, v, weather, current_time, crowd_fn)
         if edge_data.get("status") in ("repairing", "closed"):
             return 999_999
-        base = edge_data.get("weight", 1)
+
+        # Lấy trọng số vật lý
+        base = edge_data.get("weight", 1.0)
+        edge_type = edge_data.get("edge_type", "walkway")
+
+        # 1. Ưu tiên thời tiết (sunny / rainy)
+        weather_penalty = 1.0
         if weather in ("sunny", "rainy") and not edge_data.get("has_roof"):
-            return base * 5
-        return base
+            weather_penalty = 3.0
+
+        # 2. Xử lý tùy chọn lộ trình (preference)
+        pref_cost = base
+        if preference == "wheelchair":
+            if edge_type == "stairs":
+                return 999_999  # Xe lăn không đi được cầu thang bộ
+            elif edge_type == "elevator":
+                pref_cost = base * 0.4  # Ưu tiên đi thang máy
+            elif edge_type == "bridge":
+                pref_cost = base * 0.8  # Cầu nối bằng phẳng ổn
+        elif preference == "covered":
+            if not edge_data.get("has_roof"):
+                pref_cost = base * 15.0  # Phạt cực nặng nếu đi đường ngoài trời
+        elif preference == "fastest":
+            if edge_type == "stairs":
+                pref_cost = base * 1.4  # Đi thang bộ chậm và mệt hơn
+            elif edge_type == "elevator":
+                pref_cost = base * 0.8  # Thang máy nhanh hơn
+
+        # 3. Kết hợp độ đông đúc (GNN hoặc fallback)
+        crowd_penalty = 1.0
+        if use_gnn and crowd_fn:
+            try:
+                gnn_w = gnn_edge_cost(G, u, v, weather, current_time, crowd_fn)
+                crowd_penalty = gnn_w / max(1.0, base)
+            except Exception:
+                pass
+        else:
+            try:
+                from engine.recommender import predict_crowd_level
+                cr_u = predict_crowd_level(G, u, current_time)
+                cr_v = predict_crowd_level(G, v, current_time)
+                avg_crowd = (cr_u + cr_v) / 2.0
+                if avg_crowd > 0.75:
+                    crowd_penalty = 2.0
+            except Exception:
+                pass
+
+        return pref_cost * weather_penalty * crowd_penalty
 
     try:
         path = nx.astar_path(
@@ -155,9 +197,10 @@ def multi_stop_routing(
     waypoints: List[str],
     weather: str = "normal",
     current_time: str = None,
+    preference: str = "fastest",
 ) -> Tuple[Optional[List], bool]:
     """
-    Lập lộ trình qua nhiều điểm dừng (Waypoints).
+    Lập lộ trình qua nhiều điểm dừng (Waypoints) có kèm theo ưu tiên đường đi.
 
     Returns:
         (full_path, all_open): Đường đi đầy đủ và trạng thái mở cửa của tất cả điểm.
@@ -176,7 +219,7 @@ def multi_stop_routing(
 
     for i in range(len(waypoints) - 1):
         segment_path, is_open = pathfinding_optimizer(
-            G, waypoints[i], waypoints[i + 1], weather, current_time
+            G, waypoints[i], waypoints[i + 1], weather, current_time, preference=preference
         )
 
         if not segment_path:
