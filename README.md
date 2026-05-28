@@ -1,5 +1,5 @@
 # AI AR Campus Explorer
-
+'''text
 source/
 ├── backend/
 │   ├── ai/
@@ -20,3 +20,4 @@ source/
 │   ├── main.py                    # File gốc chạy ứng dụng FastAPI
 │   └── requirements.txt           # Danh sách các thư viện cần tải
 └── frontend/                      # Giao diện cho người dùng (HTML/CSS, JS)
+'''
