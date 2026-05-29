@@ -1,0 +1,14 @@
+{
+  "academic_office": {
+    "name": "Phòng Đào Tạo",
+    "coord": [10.5, 2.0, -5.0]
+  },
+  "library": {
+    "name": "Thư Viện",
+    "coord": [45.0, 2.0, -15.5]
+  },
+  "cafeteria": {
+    "name": "Căn Tin",
+    "coord": [-10.0, 0.0, 20.0]
+  }
+}

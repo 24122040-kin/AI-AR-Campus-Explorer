@@ -1,0 +1,15 @@
+{
+  "nodes": {
+    "hallway_start": [0.0, 0.0, 0.0],
+    "hallway_mid": [20.0, 0.0, 0.0],
+    "library_door": [45.0, 2.0, -15.5],
+    "stairs_bottom": [20.0, 0.0, -5.0],
+    "stairs_top": [20.0, 4.0, -5.0]
+  },
+  "edges": [
+    ["hallway_start", "hallway_mid", 20.0],
+    ["hallway_mid", "stairs_bottom", 5.0],
+    ["stairs_bottom", "stairs_top", 6.4],
+    ["hallway_mid", "library_door", 30.0]
+  ]
+}
