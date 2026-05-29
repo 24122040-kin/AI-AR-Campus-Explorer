@@ -292,22 +292,39 @@ def restricted_zone_alert(
 
 def geofencing_logic(G, current_lat: float, current_lon: float, radius: float = 25.0) -> list:
     """
-    Kích hoạt thông báo AR khi sinh viên bước vào một vùng (geofence).
-    Kết hợp welcome, info và restricted_zone_alert.
+    Kích hoạt thông báo AR và tự động pop-up khi bước vào vùng (bán kính < 25m).
     """
     alerts = list(restricted_zone_alert(G, current_lat, current_lon, radius=radius))
     restricted_nodes = {a["node"] for a in alerts}
+
+    from engine.building_catalog import get_building_profile
+    from engine.recommender import predict_crowd_level
+    from engine.utils import get_current_time_str
 
     for node, data in G.nodes(data=True):
         if "gps" not in data or node in restricted_nodes:
             continue
 
         dist = haversine(current_lat, current_lon, *data["gps"])
-        if dist > radius:
+        if dist >= radius:
             continue
 
-        aliases = " ".join(data.get("aliases", [])).lower()
+        # Lấy thông tin tòa nhà
+        profile = get_building_profile(G, node)
+        current_time = get_current_time_str()
+        crowd_val = predict_crowd_level(G, node, current_time)
+        
+        # Mật độ đám đông
+        if crowd_val >= 0.85:
+            crowd_status = "Rất đông"
+        elif crowd_val >= 0.6:
+            crowd_status = "Đông vừa"
+        elif crowd_val >= 0.35:
+            crowd_status = "Bình thường"
+        else:
+            crowd_status = "Vắng"
 
+        aliases = " ".join(data.get("aliases", [])).lower()
         if "cong" in aliases or "cổng" in aliases:
             alerts.append({
                 "level": "success",
@@ -317,23 +334,18 @@ def geofencing_logic(G, current_lat: float, current_lon: float, radius: float = 
                 "msg": f"👋 Chào mừng bạn đã đến {node}. Chúc một ngày học tập hiệu quả!",
             })
         else:
-            crowd_hint = ""
-            try:
-                from engine.recommender import predict_crowd_level
-                from engine.utils import get_current_time_str
-                c = predict_crowd_level(G, node, get_current_time_str())
-                if c >= 0.8:
-                    crowd_hint = " (đang khá đông)"
-                elif c <= 0.3:
-                    crowd_hint = " (khá vắng)"
-            except Exception:
-                pass
+            # Thêm thông báo pop-up tự động
             alerts.append({
                 "level": "info",
                 "node": node,
                 "distance_m": round(dist, 1),
-                "type": "enter_zone",
-                "msg": f"📍 Bạn vừa bước vào khu vực {node}{crowd_hint}.",
+                "type": "popup",
+                "tagline": profile.get("tagline", ""),
+                "function_summary": profile.get("function_summary", ""),
+                "services": profile.get("services", []),
+                "crowd_level": round(crowd_val, 2),
+                "crowd_status": crowd_status,
+                "msg": f"📍 Bạn đang ở gần {node}. {profile.get('tagline', '')} ({crowd_status})",
             })
     return alerts
 

@@ -248,210 +248,93 @@
     line-height: 1.5;
     padding: 12px;
     background: rgba(10, 15, 28, 0.6);
-    border: 1px solid var(--border);
     border-radius: 8px;
-    margin-top: auto;
-  }
-
-  /* RECOMMENDATION ITEMS & EXPLAINABILITY */
-  .rec-card {
-    background: rgba(30, 41, 59, 0.35);
     border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 12px;
-    margin-bottom: 8px;
-    cursor: pointer;
-    transition: all 0.25s ease;
   }
 
-  .rec-card:hover {
-    border-color: var(--primary);
-    transform: translateX(2px);
-    background: rgba(30, 41, 59, 0.5);
-  }
-
-  .rec-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 8px;
-    margin-bottom: 6px;
-  }
-
-  .rec-name {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--text);
-    font-family: var(--font-title);
-  }
-
-  .rec-reason {
-    font-size: 0.74rem;
-    color: var(--muted);
-    line-height: 1.4;
-    margin-bottom: 8px;
-  }
-
-  .rec-meta {
-    display: flex;
-    gap: 4px;
-    margin-top: 6px;
-    flex-wrap: wrap;
-  }
-
-  .badge {
-    padding: 2.5px 7px;
-    border-radius: 6px;
-    font-size: 0.65rem;
-    font-weight: 700;
-    font-family: var(--font-title);
-    letter-spacing: 0.2px;
-  }
-
-  .b-blue { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.2); }
-  .b-green { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.2); }
-  .b-yellow { background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.2); }
-  .b-purple { background: rgba(192, 132, 252, 0.15); color: #c084fc; border: 1px solid rgba(192, 132, 252, 0.2); }
-
-  .btn-explain {
-    background: transparent;
-    border: none;
-    color: var(--primary);
-    font-size: 0.68rem;
-    font-weight: 600;
-    cursor: pointer;
-    margin-top: 8px;
-    text-align: left;
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    text-decoration: underline;
-  }
-
-  .explain-panel {
-    margin-top: 10px;
-    background: rgba(10, 15, 28, 0.5);
-    border-radius: 6px;
-    padding: 8px 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    border: 1px solid rgba(255, 255, 255, 0.03);
-  }
-
-  .explain-row {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .explain-label-box {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.65rem;
-    color: var(--muted);
-  }
-
-  .explain-bar {
-    height: 4px;
-    background: rgba(255, 255, 255, 0.06);
-    border-radius: 2px;
-    overflow: hidden;
-  }
-
-  .explain-fill {
-    height: 100%;
-    border-radius: 2px;
-    transition: width 0.5s ease-out;
-  }
-
-  /* MAP VIEWPORTS */
+  /* MAP VIEWPORT */
   #map-wrap {
     flex: 1;
     position: relative;
-    background: #04060f;
+    background: #020617;
   }
 
   canvas {
     display: block;
+    width: 100%;
+    height: 100%;
   }
 
-  /* FLOATING GPS HUD OVERLAY */
+  /* GPS HUD OVERLAY */
   .gps-hud {
     position: absolute;
     top: 20px;
     right: 20px;
-    width: 320px;
-    background: rgba(15, 22, 42, 0.75);
+    width: 280px;
+    background: rgba(15, 23, 42, 0.8);
     backdrop-filter: blur(16px);
     border: 1px solid var(--border);
     border-radius: 12px;
-    padding: 16px;
-    color: var(--text);
+    padding: 14px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-    z-index: 100;
+    z-index: 4;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
   }
 
   .hud-header {
     display: flex;
-    align-items: center;
     justify-content: space-between;
+    align-items: center;
     border-bottom: 1px solid var(--border);
     padding-bottom: 8px;
+    margin-bottom: 4px;
   }
 
   .hud-title {
     font-family: var(--font-title);
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 700;
     color: var(--primary);
-    display: flex;
-    align-items: center;
-    gap: 6px;
   }
 
   .hud-status-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: var(--muted);
+    background: #475569;
   }
 
   .hud-status-dot.active {
     background: var(--accent);
     box-shadow: 0 0 8px var(--accent);
-    animation: pulse-glow 1.5s infinite;
   }
 
   .hud-status-dot.simulating {
-    background: var(--primary);
-    box-shadow: 0 0 8px var(--primary);
-    animation: pulse-glow 1.5s infinite;
+    background: #eab308;
+    box-shadow: 0 0 8px #eab308;
+    animation: flash 1s infinite alternate;
+  }
+
+  @keyframes flash {
+    from { opacity: 0.4; } to { opacity: 1; }
   }
 
   .hud-row {
     display: flex;
     justify-content: space-between;
-    font-size: 0.74rem;
+    font-size: 0.72rem;
   }
 
-  .hud-label {
-    color: var(--muted);
-  }
-
-  .hud-val {
-    font-weight: 600;
-    font-family: monospace;
-  }
+  .hud-label { color: var(--muted); }
+  .hud-val { font-weight: 600; color: var(--text); }
 
   .hud-controls {
+    margin-top: 6px;
     display: flex;
     flex-direction: column;
     gap: 6px;
-    margin-top: 4px;
   }
 
   .hud-btn-group {
@@ -459,53 +342,169 @@
     gap: 6px;
   }
 
-  .alert-box {
-    background: rgba(239, 68, 68, 0.15);
-    border: 1px solid rgba(239, 68, 68, 0.25);
-    border-radius: 8px;
-    padding: 8px 12px;
-    font-size: 0.74rem;
-    color: #f87171;
-    display: none;
-    flex-direction: column;
-    gap: 4px;
-    animation: flash 2s infinite;
+  .hud-btn-group button {
+    flex: 1;
   }
 
-  @keyframes flash {
-    0% { border-color: rgba(239, 68, 68, 0.25); }
-    50% { border-color: rgba(239, 68, 68, 0.7); box-shadow: 0 0 8px rgba(239, 68, 68, 0.3); }
-    100% { border-color: rgba(239, 68, 68, 0.25); }
+  /* ALERT BOX */
+  .alert-box {
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 4px;
+  }
+
+  .alert-item {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 0.7rem;
+    color: #f87171;
+    line-height: 1.4;
   }
 
   /* LEGEND */
   .legend {
     position: absolute;
     bottom: 20px;
-    left: 20px;
-    background: rgba(15, 22, 42, 0.8);
+    right: 20px;
+    background: rgba(15, 23, 42, 0.85);
     backdrop-filter: blur(12px);
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 10px 14px;
-    font-size: 0.7rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    z-index: 4;
     display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-    z-index: 10;
-  }
-
-  .leg {
-    display: flex;
-    align-items: center;
-    gap: 6px;
+    gap: 14px;
+    font-size: 0.68rem;
     color: var(--muted);
   }
 
+  .leg { display: flex; align-items: center; gap: 6px; }
   .leg-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
+  }
+
+  /* BADGES & FEEDS */
+  .rec-card {
+    background: rgba(30, 41, 59, 0.25);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: all 0.2s ease;
+  }
+
+  .rec-card:hover {
+    border-color: rgba(0, 210, 255, 0.2);
+    background: rgba(30, 41, 59, 0.35);
+  }
+
+  .rec-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+  }
+
+  .rec-name {
+    font-family: var(--font-title);
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .rec-name:hover {
+    color: var(--primary);
+    text-decoration: underline;
+  }
+
+  .rec-reason {
+    font-size: 0.74rem;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  .rec-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .badge {
+    font-size: 0.6rem;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+  }
+
+  .b-green  { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+  .b-blue   { background: rgba(0, 210, 255, 0.15); color: #38bdf8; }
+  .b-purple { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
+  .b-yellow { background: rgba(234, 179, 8, 0.15); color: #facc15; }
+
+  /* EXPLAINABLE AI BUTTON & PANEL */
+  .btn-explain {
+    background: transparent;
+    border: none;
+    color: var(--primary);
+    font-family: var(--font-title);
+    font-size: 0.68rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+    margin-top: 2px;
+    align-self: flex-start;
+  }
+
+  .btn-explain:hover {
+    text-decoration: underline;
+  }
+
+  .explain-panel {
+    background: rgba(15, 23, 42, 0.5);
+    border-radius: 6px;
+    padding: 10px;
+    margin-top: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border: 1px solid rgba(255,255,255,0.03);
+  }
+
+  .explain-row {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .explain-label-box {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.64rem;
+    color: var(--muted);
+  }
+
+  .explain-bar {
+    background: rgba(255,255,255,0.06);
+    height: 5px;
+    border-radius: 3px;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .explain-fill {
+    height: 100%;
+    border-radius: 3px;
+    width: 0;
+    transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   /* TOAST */
@@ -532,6 +531,173 @@
   #toast.show {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
+  }
+
+  /* GEOFENCE AUTOMATED POP-UP MODAL styles */
+  .geofence-popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(3, 7, 18, 0.4);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .geofence-popup-card {
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(25px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    width: 90%;
+    max-width: 440px;
+    padding: 24px;
+    position: relative;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .geofence-popup-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    transition: all 0.2s ease;
+  }
+
+  .geofence-popup-close:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: scale(1.05);
+  }
+
+  .geofence-popup-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .geofence-popup-icon {
+    font-size: 2.2rem;
+    background: rgba(0, 210, 255, 0.15);
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 15px rgba(0, 210, 255, 0.2);
+  }
+
+  .geofence-popup-title-box {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .geofence-popup-title-box h2 {
+    font-family: var(--font-title);
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .geofence-popup-tagline {
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  .geofence-popup-body {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .geofence-popup-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .geofence-popup-section-title {
+    font-family: var(--font-title);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--primary);
+    font-weight: 700;
+  }
+
+  .geofence-popup-services-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .geofence-popup-service-item {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.78rem;
+    color: var(--text);
+  }
+
+  .geofence-popup-crowd-box {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .geofence-popup-crowd-bar-container {
+    background: rgba(255, 255, 255, 0.08);
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    width: 100%;
+  }
+
+  .geofence-popup-crowd-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+  }
+
+  .geofence-popup-crowd-status-text {
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
   }
 </style>
 </head>
@@ -618,24 +784,29 @@
         </div>
       </div>
 
-      <!-- TAB 2: USER PROFILE & PERSONA -->
+      <!-- TAB 2: AUTOMATIC USER PROFILE -->
       <div id="tab-profile" class="tab-pane">
         <div class="card">
-          <h3>👤 Thiết lập Persona</h3>
-          <label>Vai trò (Role)</label>
-          <select id="role" onchange="saveProfile()">
-            <option value="student">🎓 Sinh viên</option>
-            <option value="lecturer">👨‍🏫 Giảng viên</option>
-            <option value="visitor">🚶 Khách tham quan</option>
-          </select>
-          <label>Phong cách học tập / làm việc</label>
-          <select id="style" onchange="saveProfile()">
-            <option value="silent">🤫 Cần yên tĩnh tuyệt đối</option>
-            <option value="group">👥 Cần không gian thảo luận nhóm</option>
-          </select>
-          <label>Sở thích (Phân tách bởi dấu phẩy)</label>
-          <input type="text" id="interests" value="cntt, hoc_tap" onchange="saveProfile()"/>
-          <button class="btn btn-ghost" onclick="saveProfile()">💾 Lưu cấu hình</button>
+          <h3>👤 Hồ sơ cá nhân hóa (AI tự động)</h3>
+          <p style="font-size: 0.72rem; color: var(--muted); margin-bottom: 12px; line-height: 1.4;">
+            Hệ thống đang tự động nhận diện và cập nhật hồ sơ của bạn dựa trên lịch sử di chuyển và các địa điểm đã ghé thăm.
+          </p>
+          <div style="font-size: 0.8rem; display: flex; flex-direction: column; gap: 10px; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: var(--muted)">Vai trò nhận diện:</span>
+              <span id="display-role" style="font-weight: 600; color: var(--primary)">🎓 Đang nhận diện...</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: var(--muted)">Phong cách học tập:</span>
+              <span id="display-style" style="font-weight: 600; color: var(--accent)">🤫 Đang nhận diện...</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; flex-direction: column; gap: 4px;">
+              <span style="color: var(--muted)">Sở thích hành vi:</span>
+              <div id="display-interests" style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px;">
+                <span style="color:var(--muted);font-size:0.75rem">Không có</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="card">
@@ -654,8 +825,7 @@
           <label>Nhu cầu tự nhiên của bạn</label>
           <input type="text" id="query" placeholder="Tìm chỗ tự học yên tĩnh mát mẻ, ăn trưa..."/>
           <div style="display: flex; gap: 6px;">
-            <button class="btn btn-primary" style="flex: 1;" onclick="fetchRecommend()">✨ Đề xuất AI</button>
-            <button class="btn btn-ghost" style="flex: 1;" onclick="fetchNCF()">🧠 NCF</button>
+            <button class="btn btn-primary" style="width: 100%;" onclick="fetchRecommend()">✨ Đề xuất AI</button>
           </div>
         </div>
 
@@ -670,7 +840,7 @@
           <div style="font-size: 0.74rem; display: flex; flex-direction: column; gap: 8px;">
             <div style="display: flex; justify-content: space-between;">
               <span style="color: var(--muted)">Mô hình:</span>
-              <span style="font-weight:600; color: var(--primary)">NCF + Crowd MLP</span>
+              <span style="font-weight:600; color: var(--primary)">Crowd MLP (Input: 19)</span>
             </div>
             <div style="display: flex; justify-content: space-between;">
               <span style="color: var(--muted)">IPS Snap Geofence:</span>
@@ -681,7 +851,7 @@
         
         <div class="card">
           <h3>⚙️ Huấn luyện lại AI</h3>
-          <p style="font-size: 0.72rem; color: var(--muted); margin-bottom: 12px; line-height: 1.4;">Huấn luyện lại mô hình PyTorch NCF với lịch sử tương tác và vị trí GPS thực tế để tăng độ chính xác cá nhân hóa.</p>
+          <p style="font-size: 0.72rem; color: var(--muted); margin-bottom: 12px; line-height: 1.4;">Huấn luyện lại mô hình PyTorch với lịch sử di chuyển thực tế để tăng độ chính xác dự báo đám đông.</p>
           <button class="btn btn-primary" onclick="trainModels()">🚀 Bắt đầu Train lại</button>
         </div>
       </div>
@@ -707,6 +877,39 @@
   </div>
 </div>
 
+<!-- AUTOMATIC GEOFENCE POPUP MODAL -->
+<div id="geofence-popup-modal" class="geofence-popup-overlay" style="display: none;">
+  <div class="geofence-popup-card">
+    <button class="geofence-popup-close" onclick="closeGeofencePopup()">✕</button>
+    <div class="geofence-popup-header">
+      <span class="geofence-popup-icon">📍</span>
+      <div class="geofence-popup-title-box">
+        <h2 id="geofence-popup-title">Tòa A</h2>
+        <span id="geofence-popup-tagline" class="geofence-popup-tagline">Khu thực nghiệm & phòng lab kỹ thuật</span>
+      </div>
+    </div>
+    
+    <div class="geofence-popup-body">
+      <div class="geofence-popup-section">
+        <div class="geofence-popup-section-title">Chức năng & dịch vụ</div>
+        <div id="geofence-popup-services" class="geofence-popup-services-grid">
+          <!-- Dynamically populated services -->
+        </div>
+      </div>
+      
+      <div class="geofence-popup-section">
+        <div class="geofence-popup-section-title">Mật độ đám đông</div>
+        <div class="geofence-popup-crowd-box">
+          <div class="geofence-popup-crowd-bar-container">
+            <div id="geofence-popup-crowd-fill" class="geofence-popup-crowd-fill" style="width: 50%;"></div>
+          </div>
+          <span id="geofence-popup-crowd-status" class="geofence-popup-crowd-status-text">Bình thường (50%)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -718,6 +921,7 @@ const ctx    = canvas.getContext('2d');
 
 let pulseRadius = 0;
 let hudStatus = 'OFFLINE'; // OFFLINE, ONLINE, SIMULATING, TRACKING
+let activePopupBuilding = null;
 
 // Session ID cá nhân hóa cho từng user
 let sessionId = localStorage.getItem('campus_navigator_session_id');
@@ -802,7 +1006,6 @@ function drawGraph(path=[]){
       ctx.shadowBlur = 0;
     }
     ctx.stroke();
-    // Reset shadow
     ctx.shadowBlur = 0;
   });
 
@@ -813,7 +1016,6 @@ function drawGraph(path=[]){
     const p=toCanvas(n.x,n.y);
     const active=path.includes(n.id);
     
-    // Vòng phát sáng nếu là node đang hoạt động trên route
     if (active) {
       ctx.beginPath();
       ctx.arc(p.cx, p.cy, 14 + pulseRadius * 0.15, 0, 2*Math.PI);
@@ -832,14 +1034,13 @@ function drawGraph(path=[]){
     ctx.fillStyle=active?'#fff':'#cbd5e1'; 
     ctx.font=(active?'bold ':'')+'9px Outfit, sans-serif';
     ctx.textAlign='center'; 
-    ctx.fillText(n.id.split('_').pop(),p.cx,p.cy-16);
+    ctx.fillText(n.id,p.cx,p.cy-16);
   });
 
   // Vẽ vị trí GPS hiện tại của người dùng (Pulsing blue dot)
   if(gpsPos){
     const p=toCanvas(gpsPos.lon, gpsPos.lat);
     
-    // Radar wave ring
     ctx.beginPath();
     ctx.arc(p.cx, p.cy, 10 + pulseRadius, 0, 2*Math.PI);
     ctx.strokeStyle = 'rgba(0, 210, 255, ' + (1 - pulseRadius / 25) + ')';
@@ -858,7 +1059,6 @@ async function loadGraph(){
   resizeCanvas();
 }
 
-// Vòng lặp animation vẽ 60fps để hiển thị hiệu ứng xung radar mượt mà
 function startMapAnimationLoop() {
   function step() {
     pulseRadius = (pulseRadius + 0.35) % 25;
@@ -886,7 +1086,6 @@ async function findRoute(){
       `✅ Lộ trình: <b>${d.path.join(' → ')}</b><br>📏 ${d.total_distance_m}m (~${d.estimated_mins} phút) | ${d.routing_engine}`;
     toast('Tìm đường thành công! Có thể chạy mô phỏng di chuyển.');
     
-    // Reset GPS về điểm bắt đầu
     const nm = Object.fromEntries(G.nodes.map(n=>[n.id,n]));
     const startNode = nm[s];
     if(startNode) {
@@ -897,7 +1096,6 @@ async function findRoute(){
       hudStatus = 'ONLINE';
       updateHudUI();
       
-      // Tự động gọi Đề xuất dọc đường tại điểm bắt đầu
       await sendTrackingUpdate(gpsPos.lat, gpsPos.lon);
     }
   } else {
@@ -905,7 +1103,6 @@ async function findRoute(){
   }
 }
 
-// Xử lý Sự kiện Click chuột trên Bản đồ để đặt GPS giả lập thủ công
 canvas.addEventListener('mousedown', async e=>{
   if (watchId) {
     toast('Đang bật GPS thiết bị thực tế, vui lòng tắt trước khi click bản đồ!');
@@ -926,6 +1123,47 @@ canvas.addEventListener('mousedown', async e=>{
   await sendTrackingUpdate(lat, lon);
 });
 
+// Hiển thị popup geofence
+function showGeofencePopup(alertData) {
+  document.getElementById('geofence-popup-title').textContent = alertData.node;
+  document.getElementById('geofence-popup-tagline').textContent = alertData.tagline || '';
+  
+  const svcsGrid = document.getElementById('geofence-popup-services');
+  if (alertData.services && alertData.services.length > 0) {
+    svcsGrid.innerHTML = alertData.services.map(s => `
+      <div class="geofence-popup-service-item">
+        <span>${s.icon || '📌'}</span>
+        <span>${s.name}</span>
+      </div>
+    `).join('');
+  } else {
+    svcsGrid.innerHTML = `<div style="grid-column: span 2; font-size: 0.76rem; color: var(--muted)">Không có dịch vụ nào nổi bật.</div>`;
+  }
+  
+  const crowdFill = document.getElementById('geofence-popup-crowd-fill');
+  const crowdText = document.getElementById('geofence-popup-crowd-status');
+  const pct = Math.round(alertData.crowd_level * 100);
+  
+  crowdFill.style.width = pct + '%';
+  if (alertData.crowd_level >= 0.85) {
+    crowdFill.style.background = '#ef4444';
+    crowdText.style.color = '#f87171';
+  } else if (alertData.crowd_level >= 0.6) {
+    crowdFill.style.background = '#f59e0b';
+    crowdText.style.color = '#fbbf24';
+  } else {
+    crowdFill.style.background = '#10b981';
+    crowdText.style.color = '#34d399';
+  }
+  crowdText.textContent = `${alertData.crowd_status} (${pct}%)`;
+  
+  document.getElementById('geofence-popup-modal').style.display = 'flex';
+}
+
+function closeGeofencePopup() {
+  document.getElementById('geofence-popup-modal').style.display = 'none';
+}
+
 async function sendTrackingUpdate(lat, lon) {
   const end=document.getElementById('end').value;
   const w=document.getElementById('weather').value;
@@ -944,13 +1182,38 @@ async function sendTrackingUpdate(lat, lon) {
     document.getElementById('hud-dist').textContent = d.total_remaining_meters + 'm';
     document.getElementById('hud-time').textContent = d.estimated_mins + ' phút';
     
-    // Geofencing warnings
+    // Geofencing warnings and auto popup
     const alertsBox = document.getElementById('hud-alerts');
+    let popupAlert = null;
+    let standardAlerts = [];
+    
     if (d.geofence_alerts && d.geofence_alerts.length > 0) {
-      alertsBox.innerHTML = d.geofence_alerts.map(a => `<div class="alert-item">⚠️ ${a}</div>`).join('');
-      alertsBox.style.display = 'flex';
+      d.geofence_alerts.forEach(a => {
+        if (a.type === 'popup') {
+          popupAlert = a;
+        } else {
+          standardAlerts.push(a.msg || a);
+        }
+      });
+      
+      if (standardAlerts.length > 0) {
+        alertsBox.innerHTML = standardAlerts.map(a => `<div class="alert-item">⚠️ ${a}</div>`).join('');
+        alertsBox.style.display = 'flex';
+      } else {
+        alertsBox.style.display = 'none';
+      }
+      
+      if (popupAlert) {
+        if (activePopupBuilding !== popupAlert.node) {
+          activePopupBuilding = popupAlert.node;
+          showGeofencePopup(popupAlert);
+        }
+      } else {
+        activePopupBuilding = null;
+      }
     } else {
       alertsBox.style.display = 'none';
+      activePopupBuilding = null;
     }
     
     renderRecs(d.route_suggestions||[]);
@@ -968,7 +1231,7 @@ async function sendTrackingUpdate(lat, lon) {
   }
 }
 
-// MÔ PHỎNG DI CHUYỂN DỌC LỘ TRÌNH (Simulated Walk)
+// MÔ PHỎNG DI CHUYỂN
 let simInterval = null;
 let simPath = [];
 let simIndex = 0;
@@ -991,7 +1254,6 @@ function startSimulatedWalk() {
     const [lat1, lon1] = n1.gps;
     const [lat2, lon2] = n2.gps;
     
-    // Nội suy 10 điểm trung gian giữa 2 node để tạo cảm giác di chuyển trượt mượt mà
     const steps = 12;
     for (let s = 0; s < steps; s++) {
       const t = s / steps;
@@ -1030,14 +1292,13 @@ function startSimulatedWalk() {
       lon: pos.lon
     };
     
-    // Gửi tín hiệu tracking lên server mỗi 3 bước (hoặc tại điểm đích) để tối ưu lưu lượng API
     if (simIndex % 3 === 0 || simIndex === simPath.length - 1) {
       await sendTrackingUpdate(pos.lat, pos.lon);
     }
     
     simIndex++;
     updateHudUI();
-  }, 400); // 400ms mỗi bước
+  }, 400);
 }
 
 function stopSimulatedWalk() {
@@ -1053,7 +1314,7 @@ function stopSimulatedWalk() {
   updateHudUI();
 }
 
-// ĐỊNH VỊ GPS THIẾT BỊ THỰC TẾ
+// GPS THỰC TẾ
 let watchId = null;
 
 function toggleRealGPS() {
@@ -1104,7 +1365,6 @@ async function fetchRecommend(){
   const q=document.getElementById('query').value;
   const w=document.getElementById('weather').value;
   
-  // Tải màn hình chờ đề xuất
   document.getElementById('rec-list').innerHTML = `<div style="font-size:.72rem;color:var(--muted);text-align:center;padding:20px">⏳ Đang phân tích ngữ nghĩa & dự báo mật độ...</div>`;
   document.getElementById('rec-feed-header').style.display = 'block';
 
@@ -1115,21 +1375,12 @@ async function fetchRecommend(){
   toast(`${(d.recommendations||[]).length} gợi ý cá nhân hóa dành riêng cho bạn!`);
 }
 
-async function fetchNCF(){
-  const r=await fetchWithSession('/api_ncf_recommend?limit=8');
-  const d=await r.json();
-  renderRecs(d.results||[]);
-  toast('NCF: Gợi ý tối ưu từ Hồ sơ PyTorch Neural Network');
-}
-
-// GIẢI THÍCH TRỰC QUAN ĐIỂM SỐ AI (Explainable AI HUD)
 function toggleExplain(nodeId) {
   const panel = document.getElementById(`explain-${nodeId}`);
   const isHidden = panel.style.display === 'none';
   panel.style.display = isHidden ? 'flex' : 'none';
   
   if (isHidden) {
-    // Kích hoạt animation chạy thanh điểm số
     const fills = panel.querySelectorAll('.explain-fill');
     fills.forEach(fill => {
       const targetW = fill.getAttribute('data-width');
@@ -1150,15 +1401,11 @@ function renderRecs(recs){
   
   feedHeader.style.display = 'block';
   box.innerHTML=recs.map((r,i)=>{
-    const score=r.score||r.ncf_score*100||0;
-    const ncfBadge=r.ncf_score>0.5?`<span class="badge b-purple">NCF ${(r.ncf_score*100).toFixed(0)}%</span>`:'';
+    const score=r.score||0;
     const favBadge=r.is_favorite?'<span class="badge b-yellow">⭐ Yêu thích</span>':'';
     const tags=(r.personal_tags||[]).map(t=>`<span class="badge b-blue">#${t}</span>`).join('');
     
-    // ID an toàn cho DOM (loại bỏ ký tự đặc biệt)
     const domId = `explain-${r.node.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-]/g, '')}`;
-    
-    // Tách thành phần điểm số giải thích AI
     const bd = r.score_breakdown || { personalization: 50.0, proximity: 50.0, context: 50.0, crowd: 50.0 };
 
     return `<div class="rec-card">
@@ -1169,16 +1416,15 @@ function renderRecs(recs){
       <div class="rec-reason">${r.reason||''}</div>
       <div class="rec-meta">
         ${r.distance_m?`<span class="badge b-blue">~${r.distance_m}m</span>`:''}
-        ${ncfBadge}${favBadge}${tags}
+        ${favBadge}${tags}
       </div>
       
       <button class="btn-explain" onclick="toggleExplain('${domId}')">🔍 Chi tiết phân tích AI</button>
       
-      <!-- Bảng giải thích chi tiết Explainable AI (XAI) -->
       <div class="explain-panel" id="explain-${domId}" style="display:none">
         <div class="explain-row">
           <div class="explain-label-box">
-            <span>👤 Cá nhân hóa (Persona/NCF):</span>
+            <span>👤 Cá nhân hóa (Hồ sơ hành vi):</span>
             <span>${bd.personalization}%</span>
           </div>
           <div class="explain-bar">
@@ -1225,23 +1471,22 @@ function setDest(node){
   findRoute();
 }
 
-async function saveProfile(){
-  const role=document.getElementById('role').value;
-  const style=document.getElementById('style').value;
-  const ints=document.getElementById('interests').value;
-  await fetchWithSession(`/api_user_profile?role=${role}&style=${style}&interests=${encodeURIComponent(ints)}`,{method:'POST'});
-  toast('Đã cập nhật Hồ sơ của bạn trên AI Core.');
-  loadProfile();
-}
-
 async function loadProfile(){
   const r = await fetchWithSession('/api_user_profile');
   const d = await r.json();
   if(d.status === 'success') {
     const p = d.user_profile;
-    document.getElementById('role').value = p.role;
-    document.getElementById('style').value = p.study_style;
-    document.getElementById('interests').value = p.interests.join(', ');
+    
+    // Inferred profile display labels
+    const roleLabels = { student: '🎓 Sinh viên (Hệ đại học)', lecturer: '👨‍🏫 Giảng viên / Nhân viên', visitor: '🚶 Khách tham quan' };
+    const styleLabels = { silent: '🤫 Cần yên tĩnh tuyệt đối', group: '👥 Thảo luận / Học nhóm' };
+    
+    document.getElementById('display-role').textContent = roleLabels[p.role] || p.role;
+    document.getElementById('display-style').textContent = styleLabels[p.study_style] || p.study_style;
+    
+    const intsBox = document.getElementById('display-interests');
+    intsBox.innerHTML = (p.interests || []).map(i => `<span class="badge b-blue">#${i}</span>`).join('');
+    
     renderHistory(p.visited_history || {});
   }
 }
@@ -1254,19 +1499,17 @@ function renderHistory(hist){
     return;
   }
   histBox.innerHTML = keys.map(k => 
-    `<span class="badge b-blue" style="cursor: pointer;" onclick="setDest('${k.replace(/'/g,"\\\\")}')">${k.split('_').pop()} (${hist[k]})</span>`
+    `<span class="badge b-blue" style="cursor: pointer;" onclick="setDest('${k.replace(/'/g,"\\\\")}')">${k} (${hist[k]})</span>`
   ).join('');
 }
 
 async function resetHistory(){
-  const role=document.getElementById('role').value;
-  const style=document.getElementById('style').value;
-  const ints=document.getElementById('interests').value;
-  const r = await fetchWithSession(`/api_user_profile?role=${role}&style=${style}&interests=${encodeURIComponent(ints)}&reset_history=true`,{method:'POST'});
+  const r = await fetchWithSession(`/api_user_profile?reset_history=true`,{method:'POST'});
   const d = await r.json();
   if(d.status === 'success') {
     renderHistory({});
-    toast('Đã xoá lịch sử di chuyển.');
+    toast('Đã xoá lịch sử di chuyển & reset hồ sơ AI.');
+    loadProfile();
   }
 }
 
@@ -1277,8 +1520,8 @@ async function trainModels(){
   if(d.status==='success'){
     const s=d.stats;
     document.getElementById('status').innerHTML=
-      `✅ Huấn luyện thành công!<br>Intent: ${(s.intent_accuracy*100).toFixed(1)}% | `+
-      `Crowd MAE: ${s.crowd_mae} | NCF: ${(s.ncf_accuracy*100).toFixed(1)}%`;
+      `✅ Huấn luyện thành công!<br>Intent Accuracy: ${(s.intent_accuracy*100).toFixed(1)}% | `+
+      `Crowd MAE: ${s.crowd_mae}`;
     toast('Hệ thống học máy PyTorch đã cập nhật tham số mới!');
   } else {
     document.getElementById('status').innerHTML=`❌ Lỗi: ${d.detail}`;
@@ -1295,7 +1538,6 @@ setInterval(()=>{
   if(G) document.getElementById('clock').textContent='🕒 '+new Date().toLocaleTimeString('vi-VN');
 },1000);
 
-// Khởi chạy hệ thống
 loadGraph().then(() => {
   startMapAnimationLoop();
   loadProfile();

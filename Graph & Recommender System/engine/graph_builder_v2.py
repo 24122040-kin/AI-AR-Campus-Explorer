@@ -8,7 +8,7 @@ from engine.utils import haversine
 
 def build_campus_graph() -> nx.Graph:
     """
-    Xây dựng đồ thị campus (Node = phòng/địa điểm, Edge = đường đi).
+    Xây dựng đồ thị campus (Node = tòa nhà/tiện ích, Edge = đường đi).
     Alias chính thức theo spec dự án.
     """
     return build_flat_campus_graph()
@@ -24,123 +24,50 @@ def build_flat_campus_graph() -> nx.Graph:
     REST_CLOSE    = "12:30"
 
     # ---------------------------------------------------------
-    # 1. ĐỊNH NGHĨA NODE ĐA TẦNG
+    # 1. ĐỊNH NGHĨA NODE FLAT BUILDING-LEVEL
     # ---------------------------------------------------------
     nodes_data = {
-        # --- TÒA A ---
-        "Tòa A_Tầng 1_Sảnh": {
+        "Tòa A": {
             "gps": (10.876200, 106.800500), "type": "building",
-            "features": {"has_ac": 0, "has_tables": 0, "noise_level": 0.5, "capacity": 200},
+            "features": {"has_ac": 1, "has_tables": 1, "noise_level": 0.53, "capacity": 300},
             "open_time": DEFAULT_OPEN, "close_time": DEFAULT_CLOSE,
-            "aliases": ["toa a", "nha a", "sanh toa a", "tang 1 toa a"]
+            "aliases": ["toa a", "nha a", "sanh toa a", "tang 1 toa a", "phong thi nghiem a201", "lab a201", "thuc nghiem a201", "phong thi nghiem a301", "lab a301", "thuc nghiem a301"]
         },
-        "Tòa A_Tầng 2_Phòng thí nghiệm A201": {
-            "gps": (10.876240, 106.800500), "type": "building",
-            "features": {"has_ac": 1, "has_tables": 1, "noise_level": 0.6, "capacity": 50},
-            "open_time": DEFAULT_OPEN, "close_time": DEFAULT_CLOSE,
-            "aliases": ["phong thi nghiem a201", "lab a201", "thuc nghiem a201"]
-        },
-        "Tòa A_Tầng 3_Phòng thí nghiệm A301": {
-            "gps": (10.876280, 106.800500), "type": "building",
-            "features": {"has_ac": 1, "has_tables": 1, "noise_level": 0.5, "capacity": 50},
-            "open_time": DEFAULT_OPEN, "close_time": DEFAULT_CLOSE,
-            "aliases": ["phong thi nghiem a301", "lab a301", "thuc nghiem a301"]
-        },
-        
-        # --- TÒA B ---
-        "Tòa B_Tầng 1_Sảnh": {
+        "Tòa B": {
             "gps": (10.876500, 106.800700), "type": "building",
-            "features": {"has_ac": 0, "has_tables": 0, "noise_level": 0.4, "capacity": 100},
+            "features": {"has_ac": 1, "has_tables": 1, "noise_level": 0.33, "capacity": 240},
             "open_time": DEFAULT_OPEN, "close_time": DEFAULT_CLOSE,
-            "aliases": ["toa b", "nha b", "sanh toa b"]
+            "aliases": ["toa b", "nha b", "sanh toa b", "phong tu hoc b201", "tu hoc b201", "hoc nhom b201", "tu hoc yen tinh", "phong may b301", "lab b301", "thuc hanh b301", "phong lab b301"]
         },
-        "Tòa B_Tầng 2_Tự học B201": {
-            "gps": (10.876540, 106.800700), "type": "building",
-            "features": {"has_ac": 1, "has_tables": 1, "noise_level": 0.2, "capacity": 80},
-            "open_time": DEFAULT_OPEN, "close_time": DEFAULT_CLOSE,
-            "aliases": ["phong tu hoc b201", "tu hoc b201", "hoc nhom b201", "tu hoc yen tinh"]
-        },
-        "Tòa B_Tầng 3_Phòng máy B301": {
-            "gps": (10.876580, 106.800700), "type": "building",
-            "features": {"has_ac": 1, "has_tables": 1, "noise_level": 0.4, "capacity": 60},
-            "open_time": DEFAULT_OPEN, "close_time": DEFAULT_CLOSE,
-            "aliases": ["phong may b301", "lab b301", "thuc hanh b301", "phong lab b301"]
-        },
-
-        # --- TÒA C ---
-        "Tòa C_Tầng 1_Sảnh": {
+        "Tòa C": {
             "gps": (10.876800, 106.801000), "type": "building",
-            "features": {"has_ac": 0, "has_tables": 0, "noise_level": 0.4, "capacity": 100},
+            "features": {"has_ac": 1, "has_tables": 1, "noise_level": 0.37, "capacity": 200},
             "open_time": DEFAULT_OPEN, "close_time": DEFAULT_CLOSE,
-            "aliases": ["toa c", "nha c", "sanh toa c"]
+            "aliases": ["toa c", "nha c", "sanh toa c", "lab may tinh 202", "phong may 202", "lab cntt", "may tinh", "phong thuc hanh may tinh", "van phong khoa", "vp khoa", "giao vu khoa"]
         },
-        "Tòa C_Tầng 2_Lab máy tính 202": {
-            "gps": (10.876840, 106.801000), "type": "building",
-            "features": {"has_ac": 1, "has_tables": 1, "noise_level": 0.5, "capacity": 60},
-            "open_time": DEFAULT_OPEN, "close_time": DEFAULT_CLOSE,
-            "aliases": ["lab may tinh 202", "phong may 202", "lab cntt", "may tinh", "phong thuc hanh may tinh"]
-        },
-        "Tòa C_Tầng 3_Văn phòng khoa": {
-            "gps": (10.876880, 106.801000), "type": "building",
-            "features": {"has_ac": 1, "has_tables": 0, "noise_level": 0.2, "capacity": 40},
-            "open_time": DEFAULT_OPEN, "close_time": DEFAULT_CLOSE,
-            "aliases": ["van phong khoa", "vp khoa", "giao vu khoa"]
-        },
-
-        # --- TÒA D ---
-        "Tòa D_Tầng 1_Căn tin": {
+        "Tòa D": {
             "gps": (10.877200, 106.801500), "type": "building",
-            "features": {"has_ac": 0, "has_tables": 1, "noise_level": 0.7, "capacity": 400},
+            "features": {"has_ac": 1, "has_tables": 1, "noise_level": 0.37, "capacity": 680},
             "open_time": DEFAULT_OPEN, "close_time": DEFAULT_CLOSE,
-            "aliases": ["toa d", "nha d", "can tin", "canteen", "an trua", "com can tin", "doi bung", "an uong"]
+            "aliases": ["toa d", "nha d", "can tin", "canteen", "an trua", "com can tin", "doi bung", "an uong", "thu vien", "doc sach", "muon sach", "thu vien khtn", "cho doc sach", "quay giao trinh", "mua sach", "tiem sach"]
         },
-        "Tòa D_Tầng 2_Thư viện": {
-            "gps": (10.877240, 106.801500), "type": "building",
-            "features": {"has_ac": 1, "has_tables": 1, "noise_level": 0.1, "capacity": 200},
-            "open_time": DEFAULT_OPEN, "close_time": DEFAULT_CLOSE,
-            "aliases": ["thu vien", "doc sach", "muon sach", "thu vien khtn", "cho doc sach"]
-        },
-        "Tòa D_Tầng 3_Quầy giáo trình": {
-            "gps": (10.877280, 106.801500), "type": "building",
-            "features": {"has_ac": 1, "has_tables": 0, "noise_level": 0.3, "capacity": 80},
-            "open_time": DEFAULT_OPEN, "close_time": DEFAULT_CLOSE,
-            "aliases": ["quay giao trinh", "mua sach", "tiem sach"]
-        },
-
-        # --- TÒA E ---
-        "Tòa E_Tầng 1_Phòng học 101": {
+        "Tòa E": {
             "gps": (10.877000, 106.800200), "type": "building",
-            "features": {"has_ac": 1, "has_tables": 1, "noise_level": 0.4, "capacity": 120},
+            "features": {"has_ac": 1, "has_tables": 1, "noise_level": 0.3, "capacity": 170},
             "open_time": DEFAULT_OPEN, "close_time": DEFAULT_CLOSE,
-            "aliases": ["toa e", "nha e", "phong hoc 101", "ly thuyet"]
+            "aliases": ["toa e", "nha e", "phong hoc 101", "ly thuyet", "phong nghi trua", "cho ngu trua", "nghi trua"]
         },
-        "Tòa E_Tầng 2_Phòng nghỉ trưa": {
-            "gps": (10.877040, 106.800200), "type": "building",
-            "features": {"has_ac": 1, "has_tables": 0, "noise_level": 0.2, "capacity": 50},
-            "open_time": DEFAULT_OPEN, "close_time": DEFAULT_CLOSE,
-            "aliases": ["phong nghi trua", "cho ngu trua", "nghi trua"]
-        },
-
-        # --- TÒA F ---
-        "Tòa F_Tầng 1_Phòng nghỉ 102": {
+        "Tòa F": {
             "gps": (10.877200, 106.799700), "type": "building",
-            "features": {"has_ac": 1, "has_tables": 0, "noise_level": 0.2, "capacity": 50},
+            "features": {"has_ac": 1, "has_tables": 1, "noise_level": 0.2, "capacity": 100},
             "open_time": DEFAULT_OPEN, "close_time": DEFAULT_CLOSE,
-            "aliases": ["toa f", "nha f", "phong nghi 102", "cho nga lung", "buon ngu", "met qua"]
+            "aliases": ["toa f", "nha f", "phong nghi 102", "cho nga lung", "buon ngu", "met qua", "phong tu hoc f201", "tu hoc f201"]
         },
-        "Tòa F_Tầng 2_Phòng tự học F201": {
-            "gps": (10.877240, 106.799700), "type": "building",
-            "features": {"has_ac": 1, "has_tables": 1, "noise_level": 0.2, "capacity": 50},
-            "open_time": DEFAULT_OPEN, "close_time": DEFAULT_CLOSE,
-            "aliases": ["phong tu hoc f201", "tu hoc f201"]
-        },
-
-        # --- TÒA G & KHÁC ---
         "Tòa G": {
             "gps": (10.877500, 106.800000), "type": "building",
             "features": {"has_ac": 0, "has_tables": 0, "noise_level": 0.5, "capacity": 200},
             "open_time": DEFAULT_OPEN, "close_time": DEFAULT_CLOSE,
-            "aliases": ["nha g", "san toa g"]
+            "aliases": ["toa g", "nha g", "san toa g"]
         },
         "Nhà thể dục": {
             "gps": (10.878200, 106.801200), "type": "building",
@@ -156,7 +83,7 @@ def build_flat_campus_graph() -> nx.Graph:
         },
         "ATM": {
             "gps": (10.875700, 106.800900), "type": "facility",
-            "features": {"has_ac": 1, "has_tables": 0, "noise_level": 0.5, "capacity": 5},
+            "features": {"has_ac": 0, "has_tables": 0, "noise_level": 0.5, "capacity": 5},
             "open_time": "00:00", "close_time": "23:59",
             "aliases": ["cay atm", "rut tien", "het tien", "ngan hang", "tien mat"]
         },
@@ -171,14 +98,13 @@ def build_flat_campus_graph() -> nx.Graph:
             "gps": (10.875600, 106.800800), "type": "facility",
             "features": {"has_ac": 0, "has_tables": 0, "noise_level": 0.6, "capacity": 200},
             "open_time": "00:00", "close_time": "23:59",
-            "aliases": ["cong truong", "cong chinh", "cổng", "cong", "entrance", "main gate"]
+            "aliases": ["cong truong", "cong chinh", "cong", "entrance", "main gate"]
         },
     }
 
     # Thêm Node vào đồ thị
     for name, data in nodes_data.items():
-        base_building = name.split("_")[0] if "_" in name else name
-        catalog = _BUILDING_PROFILES.get(base_building, {})
+        catalog = _BUILDING_PROFILES.get(name, {})
         indoor = data["type"] in ("building", "admin", "facility") and name not in (
             "Nhà xe", "Cổng trường", "Tòa G",
         )
@@ -195,79 +121,41 @@ def build_flat_campus_graph() -> nx.Graph:
             tagline=catalog.get("tagline", ""),
             services=catalog.get("services", []),
             indoor=indoor,
-            poi_cluster=get_cluster_for_node(base_building),
+            poi_cluster=get_cluster_for_node(name),
             campus_id=CAMPUS_LINH_TRUNG["id"],
         )
 
     # ---------------------------------------------------------
-    # 2. ĐỊNH NGHĨA EDGE ĐA TẦNG — liên kết ngoài trời & trong nhà
+    # 2. ĐỊNH NGHĨA EDGE FLAT BUILDING-LEVEL
     # ---------------------------------------------------------
     edges = [
-        # --- CÁC HÀNH LANG TẦNG 1 (CÓ MÁI CHE) ---
-        ("Tòa A_Tầng 1_Sảnh",        "Tòa B_Tầng 1_Sảnh",          {"has_roof": True,  "status": "open", "edge_type": "corridor"}),
-        ("Tòa B_Tầng 1_Sảnh",        "Tòa C_Tầng 1_Sảnh",          {"has_roof": True,  "status": "open", "edge_type": "corridor"}),
-        ("Tòa C_Tầng 1_Sảnh",        "Tòa D_Tầng 1_Căn tin",       {"has_roof": True,  "status": "open", "edge_type": "corridor"}),
-        ("Tòa D_Tầng 1_Căn tin",     "Tòa E_Tầng 1_Phòng học 101", {"has_roof": True,  "status": "open", "edge_type": "corridor"}),
-        ("Tòa E_Tầng 1_Phòng học 101", "Tòa F_Tầng 1_Phòng nghỉ 102",{"has_roof": True,  "status": "open", "edge_type": "corridor"}),
-        ("Tòa F_Tầng 1_Phòng nghỉ 102","Tòa G",                    {"has_roof": True,  "status": "open", "edge_type": "corridor"}),
+        ("Tòa A",        "Tòa B",          {"has_roof": True,  "status": "open", "edge_type": "corridor"}),
+        ("Tòa B",        "Tòa C",          {"has_roof": True,  "status": "open", "edge_type": "corridor"}),
+        ("Tòa C",        "Tòa D",          {"has_roof": True,  "status": "open", "edge_type": "corridor"}),
+        ("Tòa D",        "Tòa E",          {"has_roof": True,  "status": "open", "edge_type": "corridor"}),
+        ("Tòa E",        "Tòa F",          {"has_roof": True,  "status": "open", "edge_type": "corridor"}),
+        ("Tòa F",        "Tòa G",          {"has_roof": True,  "status": "open", "edge_type": "corridor"}),
         
-        # --- LIÊN KẾT DỌC (STAIRS & ELEVATORS) ---
-        # Tòa A: Chỉ có thang bộ
-        ("Tòa A_Tầng 1_Sảnh", "Tòa A_Tầng 2_Phòng thí nghiệm A201", {"has_roof": True, "status": "open", "edge_type": "stairs"}),
-        ("Tòa A_Tầng 2_Phòng thí nghiệm A201", "Tòa A_Tầng 3_Phòng thí nghiệm A301", {"has_roof": True, "status": "open", "edge_type": "stairs"}),
+        ("Nhà xe",       "Tòa B",          {"has_roof": False, "status": "open", "edge_type": "walkway"}),
+        ("Nhà xe",       "Tòa C",          {"has_roof": False, "status": "open", "edge_type": "walkway"}),
+        ("Tòa D",        "Nhà thể dục",    {"has_roof": False, "status": "open", "edge_type": "walkway"}),
+        ("Tòa E",        "Nhà thể dục",    {"has_roof": False, "status": "open", "edge_type": "walkway"}),
         
-        # Tòa B: Có thang bộ và thang máy
-        ("Tòa B_Tầng 1_Sảnh", "Tòa B_Tầng 2_Tự học B201", {"has_roof": True, "status": "open", "edge_type": "stairs"}),
-        ("Tòa B_Tầng 2_Tự học B201", "Tòa B_Tầng 3_Phòng máy B301", {"has_roof": True, "status": "open", "edge_type": "stairs"}),
-        ("Tòa B_Tầng 1_Sảnh", "Tòa B_Tầng 3_Phòng máy B301", {"has_roof": True, "status": "open", "edge_type": "elevator"}),
+        ("Nhà xe",       "Tòa D",          {"has_roof": False, "status": "open", "edge_type": "walkway"}),
+        ("Nhà xe",       "Nhà điều hành",  {"has_roof": False, "status": "open", "edge_type": "walkway"}),
+        ("Cổng trường",  "Nhà xe",         {"has_roof": False, "status": "open", "edge_type": "walkway"}),
+        ("Cổng trường",  "Tòa A",          {"has_roof": False, "status": "open", "edge_type": "walkway"}),
 
-        # Tòa C: Chỉ có thang bộ
-        ("Tòa C_Tầng 1_Sảnh", "Tòa C_Tầng 2_Lab máy tính 202", {"has_roof": True, "status": "open", "edge_type": "stairs"}),
-        ("Tòa C_Tầng 2_Lab máy tính 202", "Tòa C_Tầng 3_Văn phòng khoa", {"has_roof": True, "status": "open", "edge_type": "stairs"}),
-
-        # Tòa D: Có thang bộ và thang máy
-        ("Tòa D_Tầng 1_Căn tin", "Tòa D_Tầng 2_Thư viện", {"has_roof": True, "status": "open", "edge_type": "stairs"}),
-        ("Tòa D_Tầng 2_Thư viện", "Tòa D_Tầng 3_Quầy giáo trình", {"has_roof": True, "status": "open", "edge_type": "stairs"}),
-        ("Tòa D_Tầng 1_Căn tin", "Tòa D_Tầng 2_Thư viện", {"has_roof": True, "status": "open", "edge_type": "elevator"}),
-        ("Tòa D_Tầng 2_Thư viện", "Tòa D_Tầng 3_Quầy giáo trình", {"has_roof": True, "status": "open", "edge_type": "elevator"}),
-
-        # Tòa E: Thang bộ
-        ("Tòa E_Tầng 1_Phòng học 101", "Tòa E_Tầng 2_Phòng nghỉ trưa", {"has_roof": True, "status": "open", "edge_type": "stairs"}),
-
-        # Tòa F: Thang bộ
-        ("Tòa F_Tầng 1_Phòng nghỉ 102", "Tòa F_Tầng 2_Phòng tự học F201", {"has_roof": True, "status": "open", "edge_type": "stairs"}),
-
-        # --- CẦU NỐI GIỮA CÁC TÒA (BRIDGES) ---
-        ("Tòa B_Tầng 2_Tự học B201", "Tòa C_Tầng 2_Lab máy tính 202", {"has_roof": True, "status": "open", "edge_type": "bridge"}),
-        ("Tòa D_Tầng 2_Thư viện", "Tòa E_Tầng 2_Phòng nghỉ trưa", {"has_roof": True, "status": "open", "edge_type": "bridge"}),
-
-        # --- ĐƯỜNG NGOÀI TRỜI (KHÔNG CÓ MÁI CHE) ---
-        ("Nhà xe",       "Tòa B_Tầng 1_Sảnh",          {"has_roof": False, "status": "open", "edge_type": "walkway"}),
-        ("Nhà xe",       "Tòa C_Tầng 1_Sảnh",          {"has_roof": False, "status": "open", "edge_type": "walkway"}),
-        ("Tòa D_Tầng 1_Căn tin", "Nhà thể dục",        {"has_roof": False, "status": "open", "edge_type": "walkway"}),
-        ("Tòa E_Tầng 1_Phòng học 101", "Nhà thể dục",  {"has_roof": False, "status": "open", "edge_type": "walkway"}),
-        
-        ("Nhà xe",       "Tòa D_Tầng 1_Căn tin",       {"has_roof": False, "status": "open", "edge_type": "walkway"}),
-        ("Nhà xe",       "Nhà điều hành",              {"has_roof": False, "status": "open", "edge_type": "walkway"}),
-        ("Cổng trường",  "Nhà xe",                     {"has_roof": False, "status": "open", "edge_type": "walkway"}),
-        ("Cổng trường",  "Tòa A_Tầng 1_Sảnh",          {"has_roof": False, "status": "open", "edge_type": "walkway"}),
-
-        ("Nhà điều hành","ATM",                        {"has_roof": False, "status": "open", "edge_type": "walkway"}),
-        ("ATM",          "Tòa E_Tầng 1_Phòng học 101", {"has_roof": False, "status": "open", "edge_type": "walkway"}),
-        ("ATM",          "Tòa F_Tầng 1_Phòng nghỉ 102",{"has_roof": False, "status": "open", "edge_type": "walkway"}),
-        ("Tòa D_Tầng 1_Căn tin", "ATM",                {"has_roof": False, "status": "open", "edge_type": "walkway"}),
+        ("Nhà điều hành","ATM",            {"has_roof": False, "status": "open", "edge_type": "walkway"}),
+        ("ATM",          "Tòa E",          {"has_roof": False, "status": "open", "edge_type": "walkway"}),
+        ("ATM",          "Tòa F",          {"has_roof": False, "status": "open", "edge_type": "walkway"}),
+        ("Tòa D",        "ATM",            {"has_roof": False, "status": "open", "edge_type": "walkway"}),
     ]
 
     for u, v, attr in edges:
         lat1, lon1 = G.nodes[u]["gps"]
         lat2, lon2 = G.nodes[v]["gps"]
-        
-        # Nếu đi thang máy/thang bộ trong cùng tòa, khoảng cách thực là nhỏ nhưng ta gán chi phí ảo (VD: 10m/tầng)
-        if "_" in u and "_" in v and u.split("_")[0] == v.split("_")[0]:
-            dist = 10.0 if attr["edge_type"] == "stairs" else 12.0
-        else:
-            dist = round(haversine(lat1, lon1, lat2, lon2), 2)
-            
+        dist = round(haversine(lat1, lon1, lat2, lon2), 2)
         attr["weight"] = dist
         G.add_edge(u, v, **attr)
 
@@ -277,7 +165,6 @@ def build_flat_campus_graph() -> nx.Graph:
 def get_canvas_bounds(G) -> dict:
     """
     Tính min/max tọa độ của đồ thị để frontend có thể scale động.
-    Trả về dict chứa min_x, max_x, min_y, max_y.
     """
     xs = [d["pos"][0] for _, d in G.nodes(data=True)]
     ys = [d["pos"][1] for _, d in G.nodes(data=True)]

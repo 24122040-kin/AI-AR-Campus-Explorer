@@ -111,6 +111,13 @@ def time_category_boost(node_id: str, G: nx.Graph, time_band: str, weekend: bool
     for svc in profile.get("services", []):
         cat = svc.get("category", "")
         score += boosts.get(cat, 0)
+        
+    # Explicit boosts specified in refactoring specs
+    if time_band == "lunch" and node_id == "Tòa D":
+        score += 30.0  # Boost for food/canteen during lunch hours
+    elif time_band == "evening" and node_id == "Nhà thể dục":
+        score += 30.0  # Boost for sports/gym during evening hours
+        
     return score
 
 

@@ -1,11 +1,15 @@
 # engine/recommender.py
 import math
+import os
+import json
 from collections import Counter
-from datetime import time
+from datetime import time, datetime
 from typing import Dict, List, Optional, Tuple
 
 import networkx as nx
 import numpy as np
+import torch
+import torch.nn as nn
 
 from engine.building_catalog import (
     build_function_reason,
@@ -16,7 +20,7 @@ from engine.building_catalog import (
 )
 from engine.optimizer import is_node_open, pathfinding_optimizer
 from engine.nlp_processor import normalize_text
-from engine.utils import haversine, parse_time
+from engine.utils import haversine, parse_time, get_current_time_str
 from engine.context_features import (
     get_time_of_day_band,
     indoor_boost,
@@ -37,6 +41,65 @@ def _normalize_score(raw: float) -> float:
     """Chuẩn hóa điểm thô về thang [0, 100]."""
     normalized = (raw / _MAX_RAW_SCORE) * 100
     return round(max(0.0, min(100.0, normalized)), 1)
+
+
+# =====================================================================
+# THỤ ĐỘNG CÁ NHÂN HÓA (Passive Persona Inferences)
+# =====================================================================
+def update_profile_passively(profile: dict) -> dict:
+    """
+    Phân tích lịch sử ghé thăm (visited_history) để tự động cập nhật
+    interests, role, và study_style một cách thụ động (background).
+    """
+    history = profile.setdefault("visited_history", {})
+    if not history:
+        # Giá trị mặc định khi chưa có tương tác
+        profile["role"] = "student"
+        profile["study_style"] = "silent"
+        profile["interests"] = ["hoc_tap"]
+        return profile
+
+    # Đếm số lần ghé thăm theo nhóm dịch vụ
+    cntt_visits = history.get("Tòa C", 0) + history.get("Tòa B", 0)
+    sport_visits = history.get("Nhà thể dục", 0) + history.get("Tòa G", 0)
+    food_visits = history.get("Tòa D", 0)  # Tòa D chứa canteen
+    study_visits = history.get("Tòa B", 0) + history.get("Tòa D", 0) + history.get("Tòa F", 0)
+    admin_visits = history.get("Nhà điều hành", 0)
+    visitor_visits = history.get("Cổng trường", 0) + history.get("ATM", 0) + history.get("Nhà xe", 0)
+
+    # 1. Tự động xác định interests
+    interests = []
+    if cntt_visits > 0:
+        interests.append("cntt")
+        interests.append("hoc_tap")
+    if sport_visits > 0:
+        interests.append("the_thao")
+    if food_visits > 0:
+        interests.append("an_uong")
+    if study_visits > 0 and "hoc_tap" not in interests:
+        interests.append("hoc_tap")
+
+    if not interests:
+        interests = ["hoc_tap"]
+    profile["interests"] = list(set(interests))
+
+    # 2. Tự động xác định role
+    if admin_visits > cntt_visits + study_visits + sport_visits:
+        profile["role"] = "lecturer"
+    elif visitor_visits > 0 and cntt_visits + study_visits + sport_visits == 0:
+        profile["role"] = "visitor"
+    else:
+        profile["role"] = "student"
+
+    # 3. Tự động xác định study_style (phong cách)
+    silent_score = history.get("Tòa B", 0) + history.get("Tòa F", 0) + history.get("Tòa D", 0) * 0.5
+    group_score = history.get("Tòa D", 0) * 0.5 + history.get("Tòa G", 0) + history.get("Tòa A", 0)
+    if group_score > silent_score:
+        profile["study_style"] = "group"
+    else:
+        profile["study_style"] = "silent"
+
+    return profile
 
 
 # =====================================================================
@@ -256,113 +319,6 @@ def _interest_score(node: str, data: dict, interests: List[str]) -> float:
     return score if score > 0 else 0.0
 
 
-def _build_reason(
-    G: nx.Graph,
-    node: str,
-    semantic: float,
-    on_route: bool,
-    dist_m: float,
-    crowd: float,
-    destination: Optional[str],
-) -> str:
-    parts: List[str] = []
-    if destination and on_route:
-        parts.append(f"Nằm trên hướng đi tới {destination}")
-    elif dist_m < 80:
-        parts.append(f"Rất gần vị trí bạn (~{int(dist_m)}m)")
-    elif dist_m < 300:
-        parts.append(f"Gần vị trí hiện tại (~{int(dist_m)}m)")
-
-    if semantic >= 0.35:
-        parts.append("khớp nhu cầu bạn mô tả")
-    if crowd >= 0.85:
-        parts.append("dự báo đông, nên ghé sớm")
-    elif crowd <= 0.25:
-        parts.append("dự báo vắng, thoải mái")
-
-    ctx = ""
-    if parts:
-        ctx = parts[0].capitalize() + (", " + ", ".join(parts[1:]) if len(parts) > 1 else "")
-
-    profile = get_building_profile(G, node)
-    func = profile.get("function_summary", "")
-    if func:
-        if ctx:
-            return f"{ctx} — Tại đây: {func}."
-        return f"Ghé {node}: {func}."
-
-    if not ctx:
-        return f"Gợi ý AI: ghé {node} trước khi tiếp tục di chuyển."
-    return ctx + "."
-
-
-# =====================================================================
-# TASK 1: SEMANTIC & INTENT RECOMMENDER (nhiều kết quả + AI)
-# =====================================================================
-def recommend_locations(
-    G: nx.Graph,
-    query: str,
-    current_time: str = None,
-    weather: str = "normal",
-    limit: int = 5,
-) -> List[dict]:
-    """Trả về danh sách địa điểm xếp hạng theo AI ngữ nghĩa + luật nhu cầu."""
-    query_norm = normalize_text(query)
-    if not query_norm:
-        return []
-
-    semantic_ai = CampusSemanticAI(G)
-    semantic_scores = semantic_ai.score_query(query)
-    needs = _extract_rule_needs(query)
-
-    ranked: List[dict] = []
-    time_band = get_time_of_day_band(current_time) if current_time else "afternoon"
-    weekend = is_weekend()
-
-    for node, data in G.nodes(data=True):
-        if not is_node_open(G, node, current_time):
-            continue
-
-        sem = semantic_scores.get(node, 0.0) * 40.0
-        rule = _rule_based_score(G, node, dict(needs), weather)
-        raw = sem + rule + time_category_boost(node, G, time_band, weekend)
-        raw += indoor_boost(G, node, weather)
-        if raw <= 0 and sem < 8:
-            continue
-
-        open_info = open_status_detail(G, node, current_time) if current_time else {}
-        ranked.append({
-            "node": node,
-            "score": _normalize_score(max(raw, sem)),
-            "raw_score": round(raw, 2),
-            "semantic_score": round(sem, 2),
-            "method": "AI Semantic + Intent",
-            "reason": _build_reason(G, node, sem / 40.0, False, 9999, 0.0, None),
-            "open_now": open_info.get("open_now", True),
-            "closing_soon": open_info.get("closing_soon", False),
-            "close_warning": open_info.get("warning"),
-        })
-
-    ranked.sort(key=lambda x: (x["raw_score"], x["semantic_score"]), reverse=True)
-    return [enrich_suggestion(G, r, query) for r in ranked[:limit]]
-
-
-def recommend_location(
-    G: nx.Graph,
-    query: str,
-    current_time: str = None,
-    weather: str = "normal",
-) -> Tuple[Optional[str], float]:
-    results = recommend_locations(G, query, current_time, weather, limit=1)
-    if not results:
-        return None, 0
-    top = results[0]
-    return top["node"], top["score"]
-
-
-# =====================================================================
-# TASK 2: GỢI Ý THEO TỌA ĐỘ + ĐIỂM ĐÍCH (AI tổng hợp)
-# =====================================================================
 def _personalization_boost(
     G: nx.Graph,
     node: str,
@@ -443,6 +399,113 @@ def _personalization_boost(
     return boost, reasons
 
 
+def _build_reason(
+    G: nx.Graph,
+    node: str,
+    semantic: float,
+    on_route: bool,
+    dist_m: float,
+    crowd: float,
+    destination: Optional[str],
+) -> str:
+    parts: List[str] = []
+    if destination and on_route:
+        parts.append(f"Nằm trên hướng đi tới {destination}")
+    elif dist_m < 80:
+        parts.append(f"Rất gần vị trí bạn (~{int(dist_m)}m)")
+    elif dist_m < 300:
+        parts.append(f"Gần vị trí hiện tại (~{int(dist_m)}m)")
+
+    if semantic >= 0.35:
+        parts.append("khớp nhu cầu bạn mô tả")
+    if crowd >= 0.85:
+        parts.append("dự báo đông, nên ghé sớm")
+    elif crowd <= 0.25:
+        parts.append("dự báo vắng, thoải mái")
+
+    ctx = ""
+    if parts:
+        ctx = parts[0].capitalize() + (", " + ", ".join(parts[1:]) if len(parts) > 1 else "")
+
+    profile = get_building_profile(G, node)
+    func = profile.get("function_summary", "")
+    if func:
+        if ctx:
+            return f"{ctx} — Tại đây: {func}."
+        return f"Ghé {node}: {func}."
+
+    if not ctx:
+        return f"Gợi ý AI: ghé {node} trước khi tiếp tục di chuyển."
+    return ctx + "."
+
+
+# =====================================================================
+# ĐỀ XUẤT NGỮ NGHĨA (TF-IDF Query Recommender)
+# =====================================================================
+def recommend_locations(
+    G: nx.Graph,
+    query: str,
+    current_time: str = None,
+    weather: str = "normal",
+    limit: int = 5,
+) -> List[dict]:
+    """Trả về danh sách địa điểm xếp hạng theo AI ngữ nghĩa + luật nhu cầu."""
+    query_norm = normalize_text(query)
+    if not query_norm:
+        return []
+
+    semantic_ai = CampusSemanticAI(G)
+    semantic_scores = semantic_ai.score_query(query)
+    needs = _extract_rule_needs(query)
+
+    ranked: List[dict] = []
+    time_band = get_time_of_day_band(current_time) if current_time else "afternoon"
+    weekend = is_weekend()
+
+    for node, data in G.nodes(data=True):
+        if not is_node_open(G, node, current_time):
+            continue
+
+        sem = semantic_scores.get(node, 0.0) * 40.0
+        rule = _rule_based_score(G, node, dict(needs), weather)
+        raw = sem + rule + time_category_boost(node, G, time_band, weekend)
+        raw += indoor_boost(G, node, weather)
+        if raw <= 0 and sem < 8:
+            continue
+
+        open_info = open_status_detail(G, node, current_time) if current_time else {}
+        ranked.append({
+            "node": node,
+            "score": _normalize_score(max(raw, sem)),
+            "raw_score": round(raw, 2),
+            "semantic_score": round(sem, 2),
+            "method": "AI Semantic + Intent",
+            "reason": _build_reason(G, node, sem / 40.0, False, 9999, 0.0, None),
+            "open_now": open_info.get("open_now", True),
+            "closing_soon": open_info.get("closing_soon", False),
+            "close_warning": open_info.get("warning"),
+        })
+
+    ranked.sort(key=lambda x: (x["raw_score"], x["semantic_score"]), reverse=True)
+    return [enrich_suggestion(G, r, query) for r in ranked[:limit]]
+
+
+def recommend_location(
+    G: nx.Graph,
+    query: str,
+    current_time: str = None,
+    weather: str = "normal",
+) -> Tuple[Optional[str], float]:
+    results = recommend_locations(G, query, current_time, weather, limit=1)
+    if not results:
+        return None, 0
+    top = results[0]
+    return top["node"], top["score"]
+
+
+# =====================================================================
+# SMART RECOMMENDATIONS (Bản đồ + Cá nhân hóa tự động)
+# =====================================================================
 def get_smart_recommendations(
     G: nx.Graph,
     current_lat: float,
@@ -456,7 +519,7 @@ def get_smart_recommendations(
     user_profile: Optional[dict] = None,
 ) -> List[dict]:
     """
-    Gợi ý thông minh dựa trên GPS, điểm đến, câu hỏi tự nhiên, sở thích và lịch sử di chuyển.
+    Gợi ý thông minh dựa trên GPS, điểm đến, câu hỏi tự nhiên và hồ sơ tự động hóa hoàn toàn.
     """
     nearest_node, dist_nearest = _nearest_node(G, current_lat, current_lon)
     curr_t = parse_time(current_time_str) if current_time_str else None
@@ -465,6 +528,9 @@ def get_smart_recommendations(
 
     if user_profile is None:
         user_profile = {}
+
+    # Chạy cập nhật hồ sơ thụ động ở background
+    update_profile_passively(user_profile)
 
     role = user_profile.get("role", "student")
     study_style = user_profile.get("study_style", "silent")
@@ -485,15 +551,6 @@ def get_smart_recommendations(
             path_nodes = set(path)
             dest_gps = G.nodes[destination]["gps"]
 
-    # --- Tính NCF scores một lần cho toàn bộ session ---
-    ncf_scores: Dict[str, float] = {}
-    if _NCF_MODEL is not None and user_profile:
-        try:
-            ncf_results = ncf_recommend(G, user_profile, current_time_str, limit=len(G.nodes))
-            ncf_scores = {r["node"]: r["ncf_score"] for r in ncf_results}
-        except Exception:
-            pass
-
     candidates: Dict[str, dict] = {}
 
     def _add(node: str, raw: float, reason: str, source: str, priority: int = 5) -> None:
@@ -505,13 +562,6 @@ def get_smart_recommendations(
         # Tính điểm cộng cá nhân hóa
         p_boost, p_reasons = _personalization_boost(G, node, role, study_style, active_interests)
         raw += p_boost
-
-        # Điểm cộng NCF — học từ lịch sử tương tác
-        ncf_s = ncf_scores.get(node, 0.0)
-        ncf_boost = 0.0
-        if ncf_s > 0.5:
-            ncf_boost = (ncf_s - 0.5) * 40.0  # max +20 điểm khi ncf_score=1.0
-            raw += ncf_boost
 
         # Điểm cộng lịch sử ghé thăm
         visit_count = visited_history.get(node, 0)
@@ -537,7 +587,7 @@ def get_smart_recommendations(
             enhanced_reason = f"{reason.rstrip('.')} ({p_desc})."
 
         # Tách nhỏ điểm số thành phần để phục vụ Explainable AI (XAI)
-        persona_raw = p_boost + ncf_boost + history_boost
+        persona_raw = p_boost + history_boost
         if source == "personal_history":
             persona_raw += 25.0
         elif source == "ai_context":
@@ -547,7 +597,7 @@ def get_smart_recommendations(
         if source == "nearby_context":
             proximity_raw = 28.0
         elif source in ("route_context", "route_neighbor"):
-            proximity_raw = raw - p_boost - ncf_boost - history_boost
+            proximity_raw = raw - p_boost - history_boost
             if source == "route_context":
                 crowd_val = predict_crowd_level(G, node, current_time_str)
                 crowd_adj_val = -8 if crowd_val >= 0.85 else 4
@@ -563,7 +613,7 @@ def get_smart_recommendations(
 
         context_raw = 0.0
         if source in ("time_morning", "time_context"):
-            context_raw = raw - p_boost - ncf_boost - history_boost
+            context_raw = raw - p_boost - history_boost
         elif source == "ai_context":
             context_raw = time_category_boost(node, G, time_band, weekend) + indoor_boost(G, node, weather)
 
@@ -600,18 +650,17 @@ def get_smart_recommendations(
             "close_warning": open_info.get("warning"),
             "time_band": time_band,
             "personal_tags": p_reasons,
-            "ncf_score": round(ncf_scores.get(node, 0.0), 4),
+            "ncf_score": 0.0,  # NCF removed
             "score_breakdown": score_breakdown,
         }
-
-    # --- Gợi ý theo thời gian (Time of Day + Open Now) ---
-    def in_time_range(start_str: str, end_str: str) -> bool:
-        return parse_time(start_str) <= curr_t <= parse_time(end_str)
 
     time_band = get_time_of_day_band(current_time_str)
     weekend = is_weekend()
 
-    # Sáng sớm 6h–9h: ưu tiên ăn sáng / căn tin
+    def in_time_range(start_str: str, end_str: str) -> bool:
+        return parse_time(start_str) <= curr_t <= parse_time(end_str)
+
+    # Sáng sớm 6h–9h: ưu tiên ăn sáng
     if time_band == "early_morning":
         for fn, d in G.nodes(data=True):
             if "can tin" not in " ".join(d.get("aliases", [])).lower():
@@ -647,7 +696,7 @@ def get_smart_recommendations(
                     "time_context", 2,
                 )
 
-    # --- Gợi ý từ Lịch sử ghé thăm (Personalized History) ---
+    # --- Lịch sử ghé thăm (Personalized History) ---
     for node, count in visited_history.items():
         if node not in G.nodes:
             continue
@@ -658,7 +707,7 @@ def get_smart_recommendations(
             reason = f"Bạn thường ghé thăm địa điểm này (đã đi {count} lần)"
             _add(node, raw, reason, "personal_history", 2)
 
-    # --- Gợi ý dọc lộ trình tới đích ---
+    # --- Dọc lộ trình ---
     if path_nodes and dest_gps:
         dest_lat, dest_lon = dest_gps
         for node in path_nodes:
@@ -677,7 +726,6 @@ def get_smart_recommendations(
             reason = _build_reason(G, node, 0, True, dist_m, crowd, destination)
             _add(node, raw, reason, "route_context", 3)
 
-        # Điểm lân cận lộ trình (1 hop từ path)
         for u, v in G.edges():
             for a, b in ((u, v), (v, u)):
                 if a not in path_nodes or b in path_nodes:
@@ -699,7 +747,7 @@ def get_smart_recommendations(
                     "route_neighbor", 4,
                 )
 
-    # --- Gợi ý theo câu hỏi / sở thích + vị trí ---
+    # --- Query / Interests ---
     for node, data in G.nodes(data=True):
         dist_m = haversine(current_lat, current_lon, *data["gps"])
         if dist_m > _NEARBY_RADIUS_M * 1.5:
@@ -742,7 +790,6 @@ def get_smart_recommendations(
         )
         _add(node, raw, reason, "ai_context", 5)
 
-    # --- Đang đứng sát một điểm thú vị ---
     if dist_nearest < 50:
         profile = get_building_profile(G, nearest_node)
         if profile.get("function_summary"):
@@ -784,12 +831,11 @@ def get_smart_recommendations(
             }),
         }, query)
 
-        # Thêm thông tin cá nhân hóa bổ sung
         visit_count = visited_history.get(item["node"], 0)
         entry["visit_count"] = visit_count
         entry["is_favorite"] = visit_count >= 3
         entry["personal_tags"] = item.get("personal_tags", [])
-        entry["ncf_score"] = item.get("ncf_score", 0.0)
+        entry["ncf_score"] = 0.0
 
         final.append(entry)
         if len(final) >= limit:
@@ -810,9 +856,6 @@ def get_proactive_recommendations(
     limit: int = 5,
     user_profile: Optional[dict] = None,
 ) -> list:
-    """
-    Gợi ý chủ động — tương thích API cũ, mở rộng theo đích đến & AI.
-    """
     smart = get_smart_recommendations(
         G, current_lat, current_lon,
         destination=destination,
@@ -855,9 +898,6 @@ def recommend_by_building_function(
     current_time: str = None,
     limit: int = 5,
 ) -> List[dict]:
-    """
-    Gợi ý tòa theo chức năng cụ thể (VD: 'muốn ăn trưa', 'cần lab máy tính').
-    """
     q = normalize_text(query)
     if not q:
         return []
@@ -889,18 +929,12 @@ def recommend_by_building_function(
     return results[:limit]
 
 
-# =====================================================================
-# SEMANTIC MAP LINKING — mô tả user → tọa độ đồ thị
-# =====================================================================
 def semantic_map_linking(
     G: nx.Graph,
     query: str,
     current_lat: Optional[float] = None,
     current_lon: Optional[float] = None,
 ) -> Optional[dict]:
-    """
-    Ánh xạ mô tả tự nhiên (VD: 'Gần thư viện') sang node + GPS trên đồ thị.
-    """
     q = normalize_text(query)
     if not q:
         return None
@@ -908,7 +942,6 @@ def semantic_map_linking(
     semantic_ai = CampusSemanticAI(G)
     scores = semantic_ai.score_query(query)
 
-    # Ưu tiên từ khóa địa danh trong câu
     for node, data in G.nodes(data=True):
         aliases = [normalize_text(node)] + [normalize_text(a) for a in data.get("aliases", [])]
         for alias in aliases:
@@ -952,9 +985,6 @@ def semantic_map_linking(
     return result
 
 
-# =====================================================================
-# CONTEXT RECOMMENDER — thời gian + vị trí (+ GNN embedding)
-# =====================================================================
 def context_recommender(
     G: nx.Graph,
     current_lat: float,
@@ -967,7 +997,6 @@ def context_recommender(
     limit: int = 6,
     user_profile: Optional[dict] = None,
 ) -> List[dict]:
-    """Gợi ý địa điểm dựa trên thời gian, vị trí GPS và ngữ cảnh (wrapper AI đầy đủ)."""
     try:
         from engine.gnn_engine import gnn_node_embedding
         embeddings = gnn_node_embedding(G)
@@ -993,123 +1022,10 @@ def context_recommender(
 
 
 # =====================================================================
-# TASK 3: CROWD PREDICTION + NCF RECOMMENDER — PYTORCH MODELS
+# CROWD PREDICTION ENGINE
 # =====================================================================
-import os
-import json
-import torch
-import torch.nn as nn
-
-
-# ---------------------------------------------------------------------------
-# CrowdPredictor — khớp với kiến trúc mới trong train_models.py
-# ---------------------------------------------------------------------------
-class CrowdPredictor(nn.Module):
-    """MLP sâu với BatchNorm — khớp với train_models.CrowdPredictor."""
-
-    def __init__(self, input_dim: int):
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(input_dim, 64),
-            nn.BatchNorm1d(64),
-            nn.ReLU(),
-            nn.Dropout(0.2),
-            nn.Linear(64, 32),
-            nn.ReLU(),
-            nn.Linear(32, 1),
-            nn.Sigmoid(),
-        )
-
-    def forward(self, x):
-        return self.net(x)
-
-
-# ---------------------------------------------------------------------------
-# NCFRecommender — Neural Collaborative Filtering
-# ---------------------------------------------------------------------------
-class NCFRecommender(nn.Module):
-    """
-    GMF + MLP Neural Collaborative Filtering.
-    Học từ lịch sử tương tác user × item để cá nhân hóa đề xuất.
-    """
-
-    def __init__(
-        self,
-        num_users: int,
-        num_items: int,
-        embed_dim: int = 32,
-        mlp_layers: list = None,
-        context_dim: int = 2,
-    ):
-        super().__init__()
-        mlp_layers = mlp_layers or [128, 64, 32]
-
-        self.user_embed_gmf = nn.Embedding(num_users, embed_dim)
-        self.item_embed_gmf = nn.Embedding(num_items, embed_dim)
-        self.user_embed_mlp = nn.Embedding(num_users, embed_dim)
-        self.item_embed_mlp = nn.Embedding(num_items, embed_dim)
-
-        mlp_input = embed_dim * 2 + context_dim
-        layers = []
-        for out_dim in mlp_layers:
-            layers += [nn.Linear(mlp_input, out_dim), nn.ReLU(), nn.Dropout(0.2)]
-            mlp_input = out_dim
-        self.mlp = nn.Sequential(*layers)
-
-        self.output = nn.Linear(embed_dim + mlp_layers[-1], 1)
-        self.sigmoid = nn.Sigmoid()
-
-    def forward(self, user_ids, item_ids, context):
-        u_gmf = self.user_embed_gmf(user_ids)
-        i_gmf = self.item_embed_gmf(item_ids)
-        gmf_out = u_gmf * i_gmf
-
-        u_mlp = self.user_embed_mlp(user_ids)
-        i_mlp = self.item_embed_mlp(item_ids)
-        mlp_in = torch.cat([u_mlp, i_mlp, context], dim=1)
-        mlp_out = self.mlp(mlp_in)
-
-        combined = torch.cat([gmf_out, mlp_out], dim=1)
-        return self.sigmoid(self.output(combined)).squeeze(1)
-
-    def score_item(self, user_idx: int, item_idx: int, hour: float, dow: int) -> float:
-        """Tính điểm NCF cho một cặp (user, item) tại ngữ cảnh giờ/ngày."""
-        self.eval()
-        with torch.no_grad():
-            u = torch.tensor([user_idx], dtype=torch.long)
-            i = torch.tensor([item_idx], dtype=torch.long)
-            ctx = torch.tensor([[hour / 24.0, dow / 6.0]], dtype=torch.float32)
-            return float(self.forward(u, i, ctx).item())
-
-    def top_k_for_user(
-        self,
-        user_idx: int,
-        item_indices: List[int],
-        hour: float,
-        dow: int,
-        k: int = 8,
-    ) -> List[Tuple[int, float]]:
-        """Trả về top-k item indices và điểm NCF cho một user."""
-        self.eval()
-        with torch.no_grad():
-            u = torch.tensor([user_idx] * len(item_indices), dtype=torch.long)
-            i = torch.tensor(item_indices, dtype=torch.long)
-            ctx = torch.tensor(
-                [[hour / 24.0, dow / 6.0]] * len(item_indices),
-                dtype=torch.float32,
-            )
-            scores = self.forward(u, i, ctx).tolist()
-        ranked = sorted(zip(item_indices, scores), key=lambda x: -x[1])
-        return ranked[:k]
-
-
-# ---------------------------------------------------------------------------
-# Singleton: load models khi import
-# ---------------------------------------------------------------------------
 _CROWD_MODEL = None
 _CROWD_METADATA = None
-_NCF_MODEL = None
-_NCF_METADATA = None
 
 
 def load_crowd_model():
@@ -1134,59 +1050,48 @@ def load_crowd_model():
         _CROWD_MODEL = None
 
 
+# NCF Mock and Dummy definitions to prevent imports crashes (NCF is deleted)
 def load_ncf_model():
-    global _NCF_MODEL, _NCF_METADATA
-    engine_dir = os.path.dirname(os.path.abspath(__file__))
-    model_path = os.path.join(engine_dir, "ncf_model.pth")
-    metadata_path = os.path.join(engine_dir, "model_metadata.json")
+    pass
 
-    if not os.path.exists(model_path) or not os.path.exists(metadata_path):
-        return
-    try:
-        with open(metadata_path, "r", encoding="utf-8") as f:
-            meta = json.load(f)
-        if "ncf" not in meta:
-            return
-        _NCF_METADATA = meta["ncf"]
-        _NCF_MODEL = NCFRecommender(
-            num_users=_NCF_METADATA["num_users"],
-            num_items=_NCF_METADATA["num_items"],
-            embed_dim=_NCF_METADATA.get("embed_dim", 32),
-            mlp_layers=_NCF_METADATA.get("mlp_layers", [128, 64, 32]),
-            context_dim=_NCF_METADATA.get("context_dim", 2),
+def ncf_recommend(G, user_profile, current_time_str=None, limit=8):
+    return []
+
+
+class CrowdPredictor(nn.Module):
+    def __init__(self, input_dim: int):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(input_dim, 64),
+            nn.BatchNorm1d(64),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.Linear(64, 32),
+            nn.ReLU(),
+            nn.Linear(32, 1),
+            nn.Sigmoid(),
         )
-        _NCF_MODEL.load_state_dict(
-            torch.load(model_path, map_location="cpu", weights_only=True)
-        )
-        _NCF_MODEL.eval()
-        print("✅ [Recommender] NCF Recommender nạp thành công.")
-    except Exception as e:
-        print(f"⚠️ [Recommender] NCF model lỗi: {e}")
-        _NCF_MODEL = None
+
+    def forward(self, x):
+        return self.net(x)
 
 
+# Load crowd model lazily
 load_crowd_model()
-load_ncf_model()
 
 
-# ---------------------------------------------------------------------------
-# predict_crowd_level
-# ---------------------------------------------------------------------------
 def predict_crowd_level(G: nx.Graph, node_id: str, current_time_str: str) -> float:
     """Dự báo mức độ đông đúc (0–1) cho một node tại thời điểm cho trước."""
-    # 1. Crowdsourcing thời gian thực ưu tiên cao nhất
     live = get_live_crowd(node_id)
     if live is not None:
         return live
 
-    # 2. Mô hình PyTorch CrowdPredictor (input_dim mới = 29)
     if _CROWD_MODEL is not None and _CROWD_METADATA is not None:
         try:
             nodes = _CROWD_METADATA["nodes"]
             weather_types = _CROWD_METADATA["weather_types"]
             input_dim = _CROWD_METADATA["input_dim"]
 
-            # Snap node về danh sách đã train
             lookup_node = node_id
             if lookup_node not in nodes:
                 base = node_id.split("_")[0] if "_" in node_id else node_id
@@ -1196,28 +1101,23 @@ def predict_crowd_level(G: nx.Graph, node_id: str, current_time_str: str) -> flo
             node_vec = np.zeros(len(nodes), dtype=np.float32)
             node_vec[nodes.index(lookup_node)] = 1.0
 
-            # Thời tiết mặc định = normal
             weather_vec = np.zeros(len(weather_types), dtype=np.float32)
             weather_vec[0] = 1.0
 
             curr_t = parse_time(current_time_str)
             hour_val = (curr_t.hour + curr_t.minute / 60.0) if curr_t else 12.0
 
-            from engine.context_features import is_weekend
-            from datetime import datetime
             now = datetime.now()
-            dow_val = now.weekday()       # 0=Mon … 6=Sun
-            month_val = now.month         # 1–12
+            dow_val = now.weekday()
+            month_val = now.month
             is_exam = 1.0 if month_val in (1, 5, 6, 12) else 0.0
 
-            # Ghép đặc trưng: node(22) + hour + dow + month + is_exam + weather(3) = 29
             features = np.concatenate([
                 node_vec,
                 [hour_val / 24.0, dow_val / 6.0, (month_val - 1) / 11.0, is_exam],
                 weather_vec,
             ])
 
-            # Đảm bảo đúng input_dim (tương thích ngược nếu model cũ dim khác)
             if len(features) != input_dim:
                 if len(features) > input_dim:
                     features = features[:input_dim]
@@ -1231,7 +1131,7 @@ def predict_crowd_level(G: nx.Graph, node_id: str, current_time_str: str) -> flo
         except Exception as e:
             print(f"⚠️ [Crowd Model Error] {e}")
 
-    # 3. Fallback bằng luật
+    # Fallback
     curr_t = parse_time(current_time_str)
     if not curr_t:
         return 0.0
@@ -1240,49 +1140,34 @@ def predict_crowd_level(G: nx.Graph, node_id: str, current_time_str: str) -> flo
     aliases = " ".join(node_data.get("aliases", [])).lower()
     base_crowd = 0.2
 
-    if "can tin" in aliases or "an" in aliases:
+    if "can tin" in aliases or "an" in aliases or node_id == "Tòa D":
         if time(6, 0) <= curr_t <= time(9, 0):
             return 0.55
         if time(11, 30) <= curr_t <= time(13, 0):
             return 0.95
         return 0.4
 
-    if "thu vien" in aliases or "tu hoc" in aliases:
+    if "thu vien" in aliases or "tu hoc" in aliases or node_id in ("Tòa B", "Tòa C"):
         if time(8, 0) <= curr_t <= time(11, 0) or time(14, 0) <= curr_t <= time(16, 30):
             return 0.8
         return 0.3
 
-    if "the thao" in aliases or "gym" in aliases:
+    if "the thao" in aliases or "gym" in aliases or node_id == "Nhà thể dục":
         if time(16, 30) <= curr_t <= time(18, 30):
             return 0.85
-        from engine.context_features import is_weekend
         if is_weekend() and time(8, 0) <= curr_t <= time(11, 0):
             return 0.7
         return 0.2
 
-    if "su kien" in aliases or node_id == "Tòa G":
-        from engine.context_features import is_weekend
-        if is_weekend():
-            return 0.65
-        return 0.35
-
     return base_crowd
 
 
-# ---------------------------------------------------------------------------
-# submit_crowd_report
-# ---------------------------------------------------------------------------
 def submit_crowd_report(node_id: str, level: float) -> dict:
-    """Crowdsourcing ẩn danh — cập nhật độ đông thời gian thực."""
     report_live_crowd(node_id, level)
     return {"node": node_id, "reported_level": round(level, 2), "status": "accepted"}
 
 
-# ---------------------------------------------------------------------------
-# crowd_prediction
-# ---------------------------------------------------------------------------
 def crowd_prediction(G: nx.Graph, node_id: str, current_time_str: str) -> dict:
-    """Dự báo độ đông đúc — trả về level + nhãn."""
     pred = predict_crowd_level(G, node_id, current_time_str)
     level = effective_crowd_level(G, node_id, pred)
     if level >= 0.85:
@@ -1303,137 +1188,39 @@ def crowd_prediction(G: nx.Graph, node_id: str, current_time_str: str) -> dict:
     }
 
 
-# ---------------------------------------------------------------------------
-# ncf_recommend
-# ---------------------------------------------------------------------------
-def ncf_recommend(
-    G: nx.Graph,
-    user_profile: dict,
-    current_time_str: Optional[str] = None,
-    limit: int = 8,
-) -> List[dict]:
-    """
-    Đề xuất cá nhân hóa bằng Neural Collaborative Filtering.
-
-    Tìm user profile gần nhất trong tập đã train (dựa trên role + interests),
-    sau đó dùng NCF model để score tất cả items và trả về top-k.
-
-    Trả về list dict với: node, ncf_score, score, reason, gps, source, method
-    """
-    if _NCF_MODEL is None or _NCF_METADATA is None:
-        return []
-
-    try:
-        from datetime import datetime
-        curr_t = parse_time(current_time_str) if current_time_str else None
-        hour_val = (curr_t.hour + curr_t.minute / 60.0) if curr_t else datetime.now().hour
-        dow_val = datetime.now().weekday()
-
-        user_to_idx = _NCF_METADATA["user_to_idx"]
-        item_to_idx = _NCF_METADATA["item_to_idx"]
-        profiles = _NCF_METADATA.get("user_profiles", [])
-
-        # --- Tìm user profile hoặc sử dụng current_user ---
-        role = user_profile.get("role", "student")
-        if "current_user" in user_to_idx:
-            u_idx = user_to_idx["current_user"]
-        else:
-            interests = set(i.lower().replace(" ", "_") for i in user_profile.get("interests", []))
-
-            best_uid = None
-            best_score = -1
-            for p in profiles:
-                if p["role"] != role:
-                    continue
-                p_interests = set(i.lower().replace(" ", "_") for i in p["interests"])
-                overlap = len(interests & p_interests)
-                if overlap > best_score:
-                    best_score = overlap
-                    best_uid = p["user_id"]
-
-            # Fallback: lấy user đầu tiên cùng role
-            if best_uid is None:
-                for p in profiles:
-                    if p["role"] == role:
-                        best_uid = p["user_id"]
-                        break
-            if best_uid is None:
-                best_uid = profiles[0]["user_id"]
-
-            u_idx = user_to_idx[best_uid]
-
-        # --- Score tất cả items ---
-        all_item_indices = list(range(len(_NCF_METADATA["item_to_idx"])))
-        ranked = _NCF_MODEL.top_k_for_user(u_idx, all_item_indices, hour_val, dow_val, k=limit * 2)
-
-        # Ánh xạ ngược item_idx → node name
-        idx_to_item = {v: k for k, v in item_to_idx.items()}
-
-        results = []
-        for i_idx, score in ranked:
-            node = idx_to_item.get(i_idx)
-            if not node or node not in G.nodes:
-                continue
-            if not is_node_open(G, node, current_time_str):
-                continue
-            gps = G.nodes[node]["gps"]
-            results.append({
-                "node": node,
-                "ncf_score": round(score, 4),
-                "score": round(score * 100, 1),
-                "reason": f"NCF: phù hợp hồ sơ {role} (điểm {score:.2f})",
-                "gps": gps,
-                "source": "ncf",
-                "method": "Neural Collaborative Filtering",
-            })
-            if len(results) >= limit:
-                break
-
-        return results
-    except Exception as e:
-        print(f"⚠️ [NCF Error] {e}")
-        return []
-
-
 # =====================================================================
-# TASK 4: COLLABORATIVE FILTERING (CLB / Lab / sở thích)
+# SỞ THÍCH SINH VIÊN (Collaborative Filtering mock logic)
 # =====================================================================
 _CLUB_RULES = [
     {
         "tags": ["c++", "codeforces", "sql", "code", "thuat toan", "lap trinh", "cntt"],
-        "match": ["may tinh", "lab", "thuc hanh", "nha c"],
+        "match": ["may tinh", "lab", "thuc hanh", "nha c", "toa c"],
         "label": "Lab CNTT / Phòng máy",
         "score": 50,
     },
     {
         "tags": ["robot", "iot", "arduino", "dien tu"],
-        "match": ["phong thi nghiem", "nha a", "lab"],
+        "match": ["phong thi nghiem", "nha a", "lab", "toa a"],
         "label": "CLB Robot / Thực nghiệm",
         "score": 45,
     },
     {
         "tags": ["genshin", "tft", "game", "esport", "lol"],
-        "match": ["phong nghi", "canteen"],
+        "match": ["phong nghi", "canteen", "toa d", "toa f"],
         "label": "CLB Game / Esport",
         "score": 35,
     },
     {
         "tags": ["football", "bayern", "chelsea", "the thao", "bong da", "cau long"],
-        "match": ["the duc", "the thao", "gym", "clb"],
+        "match": ["the duc", "the thao", "gym", "clb", "nha the duc"],
         "label": "CLB Thể thao",
         "score": 45,
     },
     {
         "tags": ["english", "ielts", "toeic", "ngoai ngu"],
-        "match": ["thu vien", "tu hoc"],
+        "match": ["thu vien", "tu hoc", "toa d", "toa b"],
         "label": "CLB Ngoại ngữ / Self-study",
         "score": 30,
-    },
-    {
-        "tags": ["am nhac", "music", "band", "guitar"],
-        "match": ["nha g", "phong nghi"],
-        "label": "CLB Âm nhạc",
-        "score": 28,
     },
 ]
 
@@ -1444,7 +1231,6 @@ def collaborative_filtering(
     current_lat: Optional[float] = None,
     current_lon: Optional[float] = None,
 ) -> List[dict]:
-    """Gợi ý CLB / Lab / địa điểm theo sở thích sinh viên."""
     suggestions = []
     interests_str = " ".join(user_interests).lower()
 
@@ -1455,7 +1241,7 @@ def collaborative_filtering(
 
         for rule in _CLUB_RULES:
             if any(t in interests_str for t in rule["tags"]):
-                if any(m in aliases for m in rule["match"]):
+                if any(m in aliases for m in rule["match"]) or rule["match"][0] in node.lower():
                     total += rule["score"]
                     matched_labels.append(rule["label"])
 
@@ -1479,35 +1265,3 @@ def collaborative_filtering(
 
     suggestions.sort(key=lambda x: x["match_score"], reverse=True)
     return suggestions[:8]
-
-
-# =====================================================================
-# TEST LOCAL
-# =====================================================================
-if __name__ == "__main__":
-    from engine.graph_builder_v2 import build_flat_campus_graph
-
-    campus_graph = build_flat_campus_graph()
-    now = "12:00"
-
-    print("--- TEST AI SEMANTIC (TOP 3) ---")
-    for r in recommend_locations(campus_graph, "tim cho mat me yen tinh hoc bai", now, limit=3):
-        print(f"  {r['node']}: {r['score']}/100 — {r['reason']}")
-
-    print("\n--- TEST SMART (GPS + ĐÍCH) ---")
-    lat, lon = 10.8710, 106.8020
-    dest = "Tòa D"
-    for s in get_smart_recommendations(
-        campus_graph, lat, lon,
-        destination=dest,
-        query="an trua",
-        current_time_str=now,
-        limit=5,
-    ):
-        print(f"  [{s['source']}] {s['node']} ({s['score']}) — {s['reason']}")
-
-    print("\n--- TEST CROWD ---")
-    print(f"Căn tin 12:00: {predict_crowd_level(campus_graph, 'Tòa D', '12:00') * 100:.0f}%")
-
-    print("\n--- TEST SUBMIT CROWD REPORT ---")
-    print(submit_crowd_report("Tòa D", 0.9))

@@ -2,11 +2,10 @@
 """
 AI AR Campus API — Pathfinding & Smart Recommender
 ===================================================
-Chỉ giữ lại 2 nhóm chức năng cốt lõi:
-  1. Tìm đường (Pathfinding)  — A* + GNN, đa điểm, ưu tiên xe lăn/mái che
-  2. Đề xuất thời gian thực  — GPS + NCF + crowd + cá nhân hóa
-
-Tất cả endpoint khác (IPS, schedule, events, chat, AR, ...) đã được loại bỏ.
+Chỉ giữ lại các nhóm chức năng cốt lõi:
+  1. Tìm đường (Pathfinding)  — A* + GNN, đa điểm
+  2. Đề xuất thời gian thực  — GPS + crowd + cá nhân hóa tự động
+  3. Quản lý vị trí GPS và cảnh báo geofence tự động
 """
 
 from datetime import datetime
@@ -35,8 +34,7 @@ from engine.recommender import (
     crowd_prediction,
     predict_crowd_level,
     submit_crowd_report,
-    ncf_recommend,
-    load_ncf_model,
+    update_profile_passively,
     load_crowd_model,
 )
 from engine.utils import haversine, get_current_time_str, WALKING_SPEED_MPM
@@ -46,7 +44,7 @@ from engine.utils import haversine, get_current_time_str, WALKING_SPEED_MPM
 # ---------------------------------------------------------------------------
 app = FastAPI(
     title="AI AR Campus — Pathfinding & Smart Recommender",
-    description="Tìm đường A* + Đề xuất AI (NCF + Crowd + GPS)",
+    description="Tìm đường A* + Đề xuất AI tự động thụ động (Crowd + GPS)",
     version="3.0",
 )
 
@@ -58,17 +56,19 @@ _bounds    = get_canvas_bounds(G)
 USER_PROFILES_DB: dict = {}
 
 def get_session_profile(session_id: Optional[str] = None) -> dict:
-    """Lấy hoặc khởi tạo hồ sơ người dùng tương ứng với session_id."""
+    """Lấy hoặc khởi tạo hồ sơ người dùng tương ứng với session_id và cập nhật thụ động."""
     if not session_id or session_id == "null" or session_id == "undefined":
         session_id = "default"
     if session_id not in USER_PROFILES_DB:
         USER_PROFILES_DB[session_id] = {
-            "role":            "student",   # student | lecturer | visitor
-            "study_style":     "silent",    # silent | group
-            "interests":       ["cntt", "hoc_tap"],
+            "role":            "student",   # Tự động suy luận
+            "study_style":     "silent",    # Tự động suy luận
+            "interests":       ["hoc_tap"],  # Tự động suy luận
             "visited_history": {},          # {node_id: visit_count}
         }
-    return USER_PROFILES_DB[session_id]
+    profile = USER_PROFILES_DB[session_id]
+    update_profile_passively(profile)
+    return profile
 
 # Khởi tạo GNN
 _gnn_ready = False
@@ -81,34 +81,33 @@ except Exception as _e:
 
 
 # ===========================================================================
-# USER PROFILE
+# USER PROFILE (Cá nhân hóa thụ động)
 # ===========================================================================
 
 @app.get("/api_user_profile", tags=["Profile"])
 def get_user_profile(session_id: Optional[str] = Query(None, description="Session ID của người dùng")):
-    """Lấy hồ sơ người dùng hiện tại."""
+    """Lấy hồ sơ người dùng hiện tại (được cập nhật thụ động dựa trên lịch sử ghé thăm)."""
     profile = get_session_profile(session_id)
     return {"status": "success", "user_profile": profile}
 
 
 @app.post("/api_user_profile", tags=["Profile"])
 def update_user_profile(
-    role:          str  = Query("student",   description="student | lecturer | visitor"),
-    study_style:   str  = Query("silent",    alias="style", description="silent | group"),
-    interests:     str  = Query("cntt,hoc_tap", description="Sở thích, phân tách bởi dấu phẩy"),
     reset_history: bool = Query(False,       description="Xóa lịch sử ghé thăm"),
     session_id:    Optional[str] = Query(None, description="Session ID của người dùng"),
 ):
     """
-    Cập nhật hồ sơ người dùng.
-    NCF sẽ dùng role + interests để tìm user profile gần nhất và cá nhân hóa đề xuất.
+    Cập nhật hoặc đặt lại hồ sơ người dùng.
+    Mọi tham số thiết lập thủ công đã được loại bỏ, cá nhân hóa diễn ra thụ động.
     """
     profile = get_session_profile(session_id)
-    profile["role"]        = role
-    profile["study_style"] = study_style
-    profile["interests"]   = [i.strip() for i in interests.split(",") if i.strip()]
     if reset_history:
         profile["visited_history"] = {}
+        profile["role"] = "student"
+        profile["study_style"] = "silent"
+        profile["interests"] = ["hoc_tap"]
+    else:
+        update_profile_passively(profile)
     return {"status": "success", "user_profile": profile}
 
 
@@ -163,10 +162,6 @@ def get_route(
 ):
     """
     Lập lộ trình đa điểm dùng A* + GNN attention.
-
-    - fastest:    Nhanh nhất (mặc định)
-    - covered:    Ưu tiên đường có mái che (tránh nắng/mưa)
-    - wheelchair: Tránh cầu thang bộ, ưu tiên thang máy
     """
     pts = [p.strip() for p in waypoints.split(",") if p.strip()]
     if len(pts) < 2:
@@ -241,11 +236,11 @@ def realtime_tracking(
 ):
     """
     Tracking GPS thời gian thực:
-      1. Snap vị trí GPS → node gần nhất
+      1. Snap vị trí GPS → node gần nhất (cấp Tòa)
       2. A* từ node đó đến đích
-      3. Geofencing alerts
-      4. Gợi ý AI dọc đường (NCF + crowd + sở thích)
-      5. Tự động ghi lịch sử ghé thăm khi ở trong bán kính 25m
+      3. Cảnh báo geofencing và hiển thị pop-up tự động
+      4. Gợi ý AI dọc đường (thích ứng thụ động)
+      5. Ghi nhận lịch sử ghé thăm (bán kính < 25m) và tự động suy luận hồ sơ
     """
     if end not in G.nodes:
         raise HTTPException(status_code=400, detail=f"Node đích không tồn tại: '{end}'")
@@ -259,12 +254,13 @@ def realtime_tracking(
     # Lấy profile phiên tương ứng
     profile = get_session_profile(session_id)
 
-    # Ghi lịch sử ghé thăm
+    # Ghi lịch sử ghé thăm và tự động suy luận lại hồ sơ
     if dist_to_nearest < 25.0:
         ntype = G.nodes[nearest].get("type", "")
         if ntype in ("building", "admin") and nearest not in ("ATM", "Nhà điều hành"):
             hist = profile.setdefault("visited_history", {})
             hist[nearest] = hist.get(nearest, 0) + 1
+            update_profile_passively(profile)
 
     # Đã đến nơi
     if nearest == end and dist_to_nearest < 5:
@@ -282,7 +278,7 @@ def realtime_tracking(
     total_remaining = calc_remaining_distance(G, path, dist_to_nearest)
     path_coords     = [{"node": n, "gps": G.nodes[n]["gps"]} for n in path]
 
-    # Gợi ý AI dọc đường — tích hợp NCF
+    # Gợi ý AI dọc đường
     route_suggestions = get_smart_recommendations(
         G, current_lat, current_lon,
         destination=end,
@@ -323,12 +319,8 @@ def smart_recommend(
     session_id:  Optional[str]  = Query(None, description="Session ID của người dùng"),
 ):
     """
-    Đề xuất địa điểm thông minh kết hợp:
-      - NCF (Neural Collaborative Filtering) — học từ hồ sơ người dùng
-      - Crowd Predictor — tránh chỗ đông
-      - GPS proximity — ưu tiên gần
-      - Time-of-day — phù hợp khung giờ
-      - Lịch sử ghé thăm — cá nhân hóa
+    Đề xuất địa điểm thông minh kết hợp crowd + GPS + khung giờ + cá nhân hóa thụ động.
+    NCF đã bị gỡ bỏ hoàn toàn.
     """
     if destination and destination not in G.nodes:
         raise HTTPException(status_code=400, detail=f"Node đích không tồn tại: '{destination}'")
@@ -352,28 +344,7 @@ def smart_recommend(
         "current_time":    now,
         "user_profile":    {k: v for k, v in profile.items() if k != "visited_history"},
         "recommendations": items,
-        "ncf_active":      True,
-    }
-
-
-@app.get("/api_ncf_recommend", tags=["Recommendation"])
-def ncf_only_recommend(
-    limit: int = Query(8, ge=1, le=20),
-    session_id: Optional[str] = Query(None, description="Session ID của người dùng"),
-):
-    """
-    Đề xuất thuần NCF — chỉ dựa trên hồ sơ người dùng (role + interests).
-    Không cần GPS. Dùng để xem AI đã học được gì từ dữ liệu người dùng.
-    """
-    profile = get_session_profile(session_id)
-    now   = get_current_time_str()
-    items = ncf_recommend(G, profile, current_time_str=now, limit=limit)
-    return {
-        "status":       "success",
-        "method":       "Neural Collaborative Filtering",
-        "user_profile": profile,
-        "current_time": now,
-        "results":      items,
+        "ncf_active":      False,
     }
 
 
@@ -383,11 +354,7 @@ def search_semantic(
     weather: str = Query("normal"),
 ):
     """
-    Tìm kiếm địa điểm bằng ngôn ngữ tự nhiên — 4 lớp:
-      1. Keyword match (NLP cơ bản)
-      2. Semantic map linking (TF-IDF)
-      3. Building function match
-      4. AI semantic ranking
+    Tìm kiếm địa điểm bằng ngôn ngữ tự nhiên
     """
     now = get_current_time_str()
 
@@ -466,11 +433,9 @@ def api_train_models(
     session_id: Optional[str] = Query(None, description="Session ID của người dùng"),
 ):
     """
-    Huấn luyện lại toàn bộ 3 mô hình AI:
-      1. IntentClassifier  (800+ mẫu, 150 epochs)
-      2. CrowdPredictor    (4000 mẫu, 200 epochs, BatchNorm)
-      3. NCFRecommender    (6000+ interactions, 100 epochs, mini-batch)
-    Sau khi train xong, tự động reload models vào bộ nhớ.
+    Huấn luyện lại các mô hình AI:
+      1. IntentClassifier
+      2. CrowdPredictor
     """
     try:
         from engine.train_models import train_all
@@ -479,7 +444,6 @@ def api_train_models(
         stats = train_all(profile)
         load_intent_model()
         load_crowd_model()
-        load_ncf_model()
         return {"status": "success", "stats": stats}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -525,4 +489,3 @@ def web_ui():
     html_content = html_content.replace("__MAX_Y__", str(b["max_y"]))
     
     return html_content
-
