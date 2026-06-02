@@ -343,6 +343,8 @@ def geofencing_logic(G, current_lat: float, current_lon: float, radius: float = 
                 "tagline": profile.get("tagline", ""),
                 "function_summary": profile.get("function_summary", ""),
                 "services": profile.get("services", []),
+                "departments": profile.get("departments", []),
+                "events": profile.get("events", []),
                 "crowd_level": round(crowd_val, 2),
                 "crowd_status": crowd_status,
                 "msg": f"📍 Bạn đang ở gần {node}. {profile.get('tagline', '')} ({crowd_status})",

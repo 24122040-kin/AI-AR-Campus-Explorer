@@ -99,7 +99,7 @@ def open_status_detail(
     }
 
 
-def time_category_boost(node_id: str, G: nx.Graph, time_band: str, weekend: bool) -> float:
+def time_category_boost(node_id: str, G: nx.Graph, time_band: str, weekend: bool, query: Optional[str] = None) -> float:
     """Điểm cộng theo khung giờ + category dịch vụ."""
     profile = get_building_profile(G, node_id)
     boosts = dict(TIME_CATEGORY_BOOST.get(time_band, {}))
@@ -108,15 +108,37 @@ def time_category_boost(node_id: str, G: nx.Graph, time_band: str, weekend: bool
             boosts[k] = boosts.get(k, 0) + v
 
     score = 0.0
+    has_specific_intent = False
+    active_cats = set()
+    if query:
+        q = normalize_text(query)
+        if any(w in q for w in ["doi", "an", "uong", "cafe", "ca phe", "com", "nuoc", "canteen"]):
+            active_cats.add("an_uong")
+            has_specific_intent = True
+        if any(w in q for w in ["the thao", "tap", "van dong", "gym", "cau long", "bong ban", "the duc"]):
+            active_cats.add("the_thao")
+            has_specific_intent = True
+        if any(w in q for w in ["ngu", "nghi ngoi", "met", "nga lung", "buon ngu"]):
+            active_cats.add("nghi_ngoi")
+            has_specific_intent = True
+        if any(w in q for w in ["hoc", "ngoi", "lam bai", "ban ghe", "tu hoc", "yen tinh", "on a", "hoc bai", "doc sach", "tap trung"]):
+            active_cats.add("hoc_tap")
+            active_cats.add("cntt")
+            has_specific_intent = True
+
     for svc in profile.get("services", []):
         cat = svc.get("category", "")
+        if has_specific_intent and cat not in active_cats:
+            continue
         score += boosts.get(cat, 0)
         
     # Explicit boosts specified in refactoring specs
-    if time_band == "lunch" and node_id == "Tòa D":
-        score += 30.0  # Boost for food/canteen during lunch hours
+    if time_band == "lunch" and node_id == "Căn tin":
+        if not has_specific_intent or "an_uong" in active_cats:
+            score += 30.0  # Boost for food/canteen during lunch hours
     elif time_band == "evening" and node_id == "Nhà thể dục":
-        score += 30.0  # Boost for sports/gym during evening hours
+        if not has_specific_intent or "the_thao" in active_cats:
+            score += 30.0  # Boost for sports/gym during evening hours
         
     return score
 
@@ -337,7 +359,7 @@ def compute_context_scores(
     rev_score, rev_hits = review_nlp_boost(node_id, query, time_band, weekend)
 
     components = {
-        "time_of_day": time_category_boost(node_id, G, time_band, weekend),
+        "time_of_day": time_category_boost(node_id, G, time_band, weekend, query=query),
         "proximity": proximity_score(dist_m, mobility),
         "indoor_weather": indoor_boost(G, node_id, weather),
         "review_nlp": rev_score,

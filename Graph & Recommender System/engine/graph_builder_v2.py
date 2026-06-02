@@ -28,37 +28,43 @@ def build_flat_campus_graph() -> nx.Graph:
     # ---------------------------------------------------------
     nodes_data = {
         "Tòa A": {
-            "gps": (10.876200, 106.800500), "type": "building",
+            "gps": (10.877500, 106.797500), "type": "building",
             "features": {"has_ac": 1, "has_tables": 1, "noise_level": 0.53, "capacity": 300},
             "open_time": DEFAULT_OPEN, "close_time": DEFAULT_CLOSE,
             "aliases": ["toa a", "nha a", "sanh toa a", "tang 1 toa a", "phong thi nghiem a201", "lab a201", "thuc nghiem a201", "phong thi nghiem a301", "lab a301", "thuc nghiem a301"]
         },
         "Tòa B": {
-            "gps": (10.876500, 106.800700), "type": "building",
+            "gps": (10.877500, 106.798000), "type": "building",
             "features": {"has_ac": 1, "has_tables": 1, "noise_level": 0.33, "capacity": 240},
             "open_time": DEFAULT_OPEN, "close_time": DEFAULT_CLOSE,
             "aliases": ["toa b", "nha b", "sanh toa b", "phong tu hoc b201", "tu hoc b201", "hoc nhom b201", "tu hoc yen tinh", "phong may b301", "lab b301", "thuc hanh b301", "phong lab b301"]
         },
         "Tòa C": {
-            "gps": (10.876800, 106.801000), "type": "building",
+            "gps": (10.877500, 106.798500), "type": "building",
             "features": {"has_ac": 1, "has_tables": 1, "noise_level": 0.37, "capacity": 200},
             "open_time": DEFAULT_OPEN, "close_time": DEFAULT_CLOSE,
             "aliases": ["toa c", "nha c", "sanh toa c", "lab may tinh 202", "phong may 202", "lab cntt", "may tinh", "phong thuc hanh may tinh", "van phong khoa", "vp khoa", "giao vu khoa"]
         },
         "Tòa D": {
-            "gps": (10.877200, 106.801500), "type": "building",
-            "features": {"has_ac": 1, "has_tables": 1, "noise_level": 0.37, "capacity": 680},
+            "gps": (10.878000, 106.798750), "type": "building",
+            "features": {"has_ac": 1, "has_tables": 1, "noise_level": 0.37, "capacity": 380},
             "open_time": DEFAULT_OPEN, "close_time": DEFAULT_CLOSE,
-            "aliases": ["toa d", "nha d", "can tin", "canteen", "an trua", "com can tin", "doi bung", "an uong", "thu vien", "doc sach", "muon sach", "thu vien khtn", "cho doc sach", "quay giao trinh", "mua sach", "tiem sach"]
+            "aliases": ["toa d", "nha d", "thu vien", "doc sach", "muon sach", "thu vien khtn", "cho doc sach", "quay giao trinh", "mua sach", "tiem sach"]
+        },
+        "Căn tin": {
+            "gps": (10.878050, 106.798700), "type": "facility",
+            "features": {"has_ac": 0, "has_tables": 1, "noise_level": 0.65, "capacity": 300},
+            "open_time": DEFAULT_OPEN, "close_time": DEFAULT_CLOSE,
+            "aliases": ["can tin", "canteen", "an trua", "com can tin", "doi bung", "an uong", "tra sua", "an vat"]
         },
         "Tòa E": {
-            "gps": (10.877000, 106.800200), "type": "building",
+            "gps": (10.877500, 106.799000), "type": "building",
             "features": {"has_ac": 1, "has_tables": 1, "noise_level": 0.3, "capacity": 170},
             "open_time": DEFAULT_OPEN, "close_time": DEFAULT_CLOSE,
             "aliases": ["toa e", "nha e", "phong hoc 101", "ly thuyet", "phong nghi trua", "cho ngu trua", "nghi trua"]
         },
         "Tòa F": {
-            "gps": (10.877200, 106.799700), "type": "building",
+            "gps": (10.877500, 106.799500), "type": "building",
             "features": {"has_ac": 1, "has_tables": 1, "noise_level": 0.2, "capacity": 100},
             "open_time": DEFAULT_OPEN, "close_time": DEFAULT_CLOSE,
             "aliases": ["toa f", "nha f", "phong nghi 102", "cho nga lung", "buon ngu", "met qua", "phong tu hoc f201", "tu hoc f201"]
@@ -70,32 +76,32 @@ def build_flat_campus_graph() -> nx.Graph:
             "aliases": ["toa g", "nha g", "san toa g"]
         },
         "Nhà thể dục": {
-            "gps": (10.878200, 106.801200), "type": "building",
+            "gps": (10.878700, 106.799250), "type": "building",
             "features": {"has_ac": 0, "has_tables": 0, "noise_level": 0.8, "capacity": 1000},
             "open_time": DEFAULT_OPEN, "close_time": DEFAULT_CLOSE,
             "aliases": ["nha the duc", "gym", "the thao", "clb", "tap gym", "cau long", "bong ban"]
         },
         "Nhà xe": {
-            "gps": (10.875800, 106.801200), "type": "facility",
+            "gps": (10.876300, 106.797500), "type": "facility",
             "features": {"has_ac": 0, "has_tables": 0, "noise_level": 0.9, "capacity": 1000},
             "open_time": DEFAULT_OPEN, "close_time": DEFAULT_CLOSE,
             "aliases": ["bai giu xe", "parking", "gui xe", "lay xe", "cat xe", "xe may", "nha de xe"]
         },
         "ATM": {
-            "gps": (10.875700, 106.800900), "type": "facility",
+            "gps": (10.876800, 106.799000), "type": "facility",
             "features": {"has_ac": 0, "has_tables": 0, "noise_level": 0.5, "capacity": 5},
             "open_time": "00:00", "close_time": "23:59",
             "aliases": ["cay atm", "rut tien", "het tien", "ngan hang", "tien mat"]
         },
         "Nhà điều hành": {
-            "gps": (10.875000, 106.799800), "type": "admin",
+            "gps": (10.876100, 106.799200), "type": "admin",
             "features": {"has_ac": 1, "has_tables": 0, "noise_level": 0.1, "capacity": 100},
             "open_time": REST_OPEN, "close_time": REST_CLOSE,
             "restricted": True,
             "aliases": ["phong ban", "giao vu", "hanh chinh", "giay to", "dong hoc phi", "staff only"]
         },
         "Cổng trường": {
-            "gps": (10.875600, 106.800800), "type": "facility",
+            "gps": (10.876000, 106.798500), "type": "facility",
             "features": {"has_ac": 0, "has_tables": 0, "noise_level": 0.6, "capacity": 200},
             "open_time": "00:00", "close_time": "23:59",
             "aliases": ["cong truong", "cong chinh", "cong", "entrance", "main gate"]
@@ -129,27 +135,35 @@ def build_flat_campus_graph() -> nx.Graph:
     # 2. ĐỊNH NGHĨA EDGE FLAT BUILDING-LEVEL
     # ---------------------------------------------------------
     edges = [
+        # Đường hành lang có mái che (Horizontal line: A -> B -> C -> E -> F -> G)
         ("Tòa A",        "Tòa B",          {"has_roof": True,  "status": "open", "edge_type": "corridor"}),
         ("Tòa B",        "Tòa C",          {"has_roof": True,  "status": "open", "edge_type": "corridor"}),
-        ("Tòa C",        "Tòa D",          {"has_roof": True,  "status": "open", "edge_type": "corridor"}),
-        ("Tòa D",        "Tòa E",          {"has_roof": True,  "status": "open", "edge_type": "corridor"}),
+        ("Tòa C",        "Tòa E",          {"has_roof": True,  "status": "open", "edge_type": "corridor"}),
         ("Tòa E",        "Tòa F",          {"has_roof": True,  "status": "open", "edge_type": "corridor"}),
         ("Tòa F",        "Tòa G",          {"has_roof": True,  "status": "open", "edge_type": "corridor"}),
         
-        ("Nhà xe",       "Tòa B",          {"has_roof": False, "status": "open", "edge_type": "walkway"}),
-        ("Nhà xe",       "Tòa C",          {"has_roof": False, "status": "open", "edge_type": "walkway"}),
-        ("Tòa D",        "Nhà thể dục",    {"has_roof": False, "status": "open", "edge_type": "walkway"}),
-        ("Tòa E",        "Nhà thể dục",    {"has_roof": False, "status": "open", "edge_type": "walkway"}),
+        # Tam giác Căn tin (C -> D -> E) - Có mái che
+        ("Tòa C",        "Tòa D",          {"has_roof": True,  "status": "open", "edge_type": "corridor"}),
+        ("Tòa D",        "Tòa E",          {"has_roof": True,  "status": "open", "edge_type": "corridor"}),
         
-        ("Nhà xe",       "Tòa D",          {"has_roof": False, "status": "open", "edge_type": "walkway"}),
-        ("Nhà xe",       "Nhà điều hành",  {"has_roof": False, "status": "open", "edge_type": "walkway"}),
+        # Nhà thi đấu (Nhà thể dục) nối E và F (Không mái che)
+        ("Tòa E",        "Nhà thể dục",    {"has_roof": False, "status": "open", "edge_type": "walkway"}),
+        ("Tòa F",        "Nhà thể dục",    {"has_roof": False, "status": "open", "edge_type": "walkway"}),
+        
+        # Cổng trường đến Nhà xe và Nhà điều hành (Không mái che)
         ("Cổng trường",  "Nhà xe",         {"has_roof": False, "status": "open", "edge_type": "walkway"}),
-        ("Cổng trường",  "Tòa A",          {"has_roof": False, "status": "open", "edge_type": "walkway"}),
-
-        ("Nhà điều hành","ATM",            {"has_roof": False, "status": "open", "edge_type": "walkway"}),
-        ("ATM",          "Tòa E",          {"has_roof": False, "status": "open", "edge_type": "walkway"}),
-        ("ATM",          "Tòa F",          {"has_roof": False, "status": "open", "edge_type": "walkway"}),
-        ("Tòa D",        "ATM",            {"has_roof": False, "status": "open", "edge_type": "walkway"}),
+        ("Cổng trường",  "Nhà điều hành",  {"has_roof": False, "status": "open", "edge_type": "walkway"}),
+        
+        # Nhà điều hành nối E và F (Không mái che)
+        ("Nhà điều hành", "Tòa E",          {"has_roof": False, "status": "open", "edge_type": "walkway"}),
+        ("Nhà điều hành", "Tòa F",          {"has_roof": False, "status": "open", "edge_type": "walkway"}),
+        
+        # Kết nối ATM (Còn lại đều có mái che -> True)
+        ("Nhà điều hành", "ATM",            {"has_roof": True,  "status": "open", "edge_type": "walkway"}),
+        ("ATM",          "Tòa E",          {"has_roof": True,  "status": "open", "edge_type": "walkway"}),
+        ("ATM",          "Tòa F",          {"has_roof": True,  "status": "open", "edge_type": "walkway"}),
+        ("Tòa D",        "ATM",            {"has_roof": True,  "status": "open", "edge_type": "walkway"}),
+        ("Tòa D",        "Căn tin",        {"has_roof": True,  "status": "open", "edge_type": "corridor"}),
     ]
 
     for u, v, attr in edges:

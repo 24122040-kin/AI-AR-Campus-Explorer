@@ -15,3 +15,6 @@ ENV/
 
 # Bỏ qua cấu hình cá nhân của VS Code
 .vscode/
+
+# Khóa muối cục bộ để ẩn danh session, không đưa lên git
+engine/.privacy_salt

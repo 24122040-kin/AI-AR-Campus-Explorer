@@ -17,7 +17,7 @@ CAMPUS_LINH_TRUNG = {
     "center_gps": (10.8766, 106.8007),
     "highlights": [
         "Dãy tòa A–G nối hành lang có mái che",
-        "Tòa D: thư viện, căn tin, quầy giao trình",
+        "Tòa D: thư viện, quầy giáo trình · Căn tin: ăn uống",
         "Nhà thể dục: gym, CLB thể thao",
         "WiFi phủ sóng toàn khu; bãi xe riêng gần cổng",
     ],
@@ -56,7 +56,7 @@ INDOOR_WEATHER_BOOST = 25  # rainy | winter
 POI_CLUSTERS: Dict[str, dict] = {
     "day_academic": {
         "label": "Dãy học tập A–G",
-        "nodes": ["Tòa A", "Tòa B", "Tòa C", "Tòa D", "Tòa E", "Tòa F", "Tòa G"],
+        "nodes": ["Tòa A", "Tòa B", "Tòa C", "Tòa D", "Tòa E", "Tòa F", "Tòa G", "Căn tin"],
         "explore_mode": True,
         "description": "Hành lang tòa nhà — lab, tự học, thư viện, căn tin",
     },
@@ -85,8 +85,10 @@ KNOWLEDGE_GRAPH_EDGES: List[dict] = [
      "tags": ["nghi ngoi"], "weight": 0.6},
     {"from": "Nhà thể dục", "to": "Tòa G", "relation": "co_occurs_with",
      "tags": ["su kien", "the thao"], "weight": 0.8},
-    {"from": "Tòa D", "to": "self", "relation": "busy_at",
-     "tags": ["dong", "can tin", "trua"], "time_band": "lunch", "weight": 0.9},
+    {"from": "Căn tin", "to": "self", "relation": "busy_at",
+     "tags": ["dong", "an", "trua"], "time_band": "lunch", "weight": 0.9},
+    {"from": "Căn tin", "to": "Tòa D", "relation": "co_occurs_with",
+     "tags": ["can tin", "thu vien"], "weight": 0.9},
     {"from": "Tòa B", "to": "self", "relation": "busy_at",
      "tags": ["dong", "thi"], "time_band": "morning", "weight": 0.75},
     {"from": "Nhà thể dục", "to": "self", "relation": "busy_at",
@@ -96,8 +98,10 @@ KNOWLEDGE_GRAPH_EDGES: List[dict] = [
 # Tín hiệu từ “đánh giá” (NLP reviews) — mô phỏng trích xuất từ review
 REVIEW_SIGNALS: Dict[str, List[dict]] = {
     "Tòa D": [
-        {"phrase": "can tin dong trua", "keywords": ["can tin", "dong", "trua"], "time_band": "lunch"},
         {"phrase": "thu vien yen tinh sang som", "keywords": ["yen tinh", "sang"], "time_band": "morning"},
+    ],
+    "Căn tin": [
+        {"phrase": "can tin dong trua", "keywords": ["can tin", "dong", "trua"], "time_band": "lunch"},
     ],
     "Tòa B": [
         {"phrase": "phong tu hoc rat yen", "keywords": ["yen tinh", "tu hoc"], "time_band": "morning"},
@@ -121,8 +125,12 @@ MOBILITY_RADIUS_M = {
 # Vùng indoor (WiFi / beacon — mô phỏng)
 INDOOR_ZONES: Dict[str, dict] = {
     "Tòa D": {
-        "floor_hints": ["Tầng trệt: căn tin", "Tầng 2: thư viện"],
-        "beacon_ids": ["LT-D-00", "LT-D-02"],
+        "floor_hints": ["Tầng trệt: Quầy Giáo trình & Sách", "Tầng 2: Thư viện Trung tâm"],
+        "beacon_ids": ["LT-D-02"],
+    },
+    "Căn tin": {
+        "floor_hints": ["Tầng trệt: Căn tin & Khu ẩm thực sinh viên"],
+        "beacon_ids": ["LT-CAN-TIN", "LT-D-00"],
     },
     "Tòa C": {"floor_hints": ["Phòng máy CNTT"], "beacon_ids": ["LT-C-LAB"]},
 }

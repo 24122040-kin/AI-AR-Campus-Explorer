@@ -12,6 +12,16 @@ from engine.nlp_processor import normalize_text
 _BUILDING_PROFILES: Dict[str, dict] = {
     "Tòa A": {
         "tagline": "Khu thực nghiệm & phòng lab kỹ thuật",
+        "departments": [
+            "Văn phòng khoa Vật lý - Vật lý kỹ thuật",
+            "Phòng thí nghiệm Cơ học ứng dụng",
+            "Phòng thực nghiệm Điện tử hạt nhân",
+            "Phòng lab AI & Robot"
+        ],
+        "events": [
+            "Triển lãm Robotics Sinh viên (08:00 - 11:30)",
+            "Hội thảo Công nghệ bán dẫn (13:30 - 16:30)"
+        ],
         "services": [
             {"id": "lab", "name": "Phòng thí nghiệm", "icon": "🔬", "category": "hoc_tap",
              "keywords": ["thuc nghiem", "lab", "kỹ thuật"]},
@@ -21,6 +31,16 @@ _BUILDING_PROFILES: Dict[str, dict] = {
     },
     "Tòa B": {
         "tagline": "Phòng tự học yên tĩnh",
+        "departments": [
+            "Phòng tự học B201 (Yên tĩnh)",
+            "Văn phòng Đoàn - Hội Sinh viên",
+            "Phòng máy B301 (Thực hành)",
+            "Trung tâm Khảo thí"
+        ],
+        "events": [
+            "Tư vấn hướng nghiệp (09:00 - 11:00)",
+            "Hoạt động sinh hoạt Câu lạc bộ (17:00 - 19:00)"
+        ],
         "services": [
             {"id": "self_study", "name": "Phòng tự học", "icon": "📖", "category": "hoc_tap",
              "keywords": ["tu hoc", "yen tinh", "tap trung"]},
@@ -30,6 +50,15 @@ _BUILDING_PROFILES: Dict[str, dict] = {
     },
     "Tòa C": {
         "tagline": "Lab máy tính & thực hành CNTT",
+        "departments": [
+            "Khoa Công nghệ Thông tin",
+            "Văn phòng Giáo vụ khoa CNTT",
+            "Phòng máy tính 202 (Thực hành)",
+            "Phòng lab Kỹ thuật phần mềm"
+        ],
+        "events": [
+            "Seminar Khoa học Dữ liệu & AI (14:00 - 16:00)"
+        ],
         "services": [
             {"id": "computer_lab", "name": "Phòng máy / Lab CNTT", "icon": "💻", "category": "cntt",
              "keywords": ["may tinh", "lab", "lap trinh", "code"]},
@@ -38,18 +67,43 @@ _BUILDING_PROFILES: Dict[str, dict] = {
         ],
     },
     "Tòa D": {
-        "tagline": "Thư viện, căn tin & quầy giao trình",
+        "tagline": "Thư viện & quầy giáo trình",
+        "departments": [
+            "Thư viện Trung tâm KHTN (Tầng 2)",
+            "Quầy Giáo trình & Sách",
+            "Phòng Y tế Học đường"
+        ],
+        "events": [
+            "Hội sách cũ USSH - KHTN (Cả ngày)"
+        ],
         "services": [
             {"id": "library", "name": "Thư viện / đọc sách", "icon": "📚", "category": "hoc_tap",
              "keywords": ["thu vien", "doc sach", "muon sach"]},
-            {"id": "canteen", "name": "Căn tin / ăn uống", "icon": "🍽️", "category": "an_uong",
-             "keywords": ["can tin", "an trua", "an", "doi bung", "com"]},
             {"id": "bookstore", "name": "Quầy giao trình / sách", "icon": "📕", "category": "hoc_tap",
              "keywords": ["giao trinh", "mua sach"]},
         ],
     },
+    "Căn tin": {
+        "tagline": "Căn tin trường & khu ẩm thực sinh viên",
+        "departments": [
+            "Căn tin trường (Tầng trệt)"
+        ],
+        "events": [],
+        "services": [
+            {"id": "canteen", "name": "Căn tin / ăn uống", "icon": "🍽️", "category": "an_uong",
+             "keywords": ["can tin", "an trua", "an", "doi bung", "com", "an vat", "tra sua"]},
+        ],
+    },
     "Tòa E": {
         "tagline": "Lý thuyết & nghỉ trưa",
+        "departments": [
+            "Văn phòng bộ môn Toán học",
+            "Phòng học Lý thuyết E101-E104",
+            "Khu vực nghỉ trưa tự do"
+        ],
+        "events": [
+            "Lớp chuyên đề Toán ứng dụng (08:00 - 10:00)"
+        ],
         "services": [
             {"id": "lecture", "name": "Phòng học lý thuyết", "icon": "🎓", "category": "hoc_tap",
              "keywords": ["ly thuyet", "bai giang"]},
@@ -59,6 +113,14 @@ _BUILDING_PROFILES: Dict[str, dict] = {
     },
     "Tòa F": {
         "tagline": "Phòng nghỉ & chỗ ngả lưng",
+        "departments": [
+            "Phòng nghỉ Sinh viên F102 (Có điều hòa)",
+            "Phòng sinh hoạt chung CLB tiếng Anh",
+            "Khu tự học F201"
+        ],
+        "events": [
+            "Workshop kỹ năng mềm (15:00 - 17:00)"
+        ],
         "services": [
             {"id": "rest", "name": "Phòng nghỉ sinh viên", "icon": "🛋️", "category": "nghi_ngoi",
              "keywords": ["nghi", "ngu", "met", "buon ngu"]},
@@ -66,6 +128,14 @@ _BUILDING_PROFILES: Dict[str, dict] = {
     },
     "Tòa G": {
         "tagline": "Khu sự kiện / hoạt động ngoài trời",
+        "departments": [
+            "Sân sự kiện trung tâm",
+            "Văn phòng Đoàn khoa Hóa học",
+            "Khoa học Vật liệu"
+        ],
+        "events": [
+            "Nhạc hội chào đón Tân sinh viên (18:00 - 21:00)"
+        ],
         "services": [
             {"id": "event", "name": "Sân / khu sự kiện", "icon": "🎪", "category": "giai_tri",
              "keywords": ["su kien", "hoat dong"]},
@@ -73,6 +143,15 @@ _BUILDING_PROFILES: Dict[str, dict] = {
     },
     "Nhà thể dục": {
         "tagline": "Gym, thể thao & CLB",
+        "departments": [
+            "Phòng GYM & Fitness",
+            "Sân cầu lông",
+            "Sân bóng bàn",
+            "Văn phòng Bộ môn Giáo dục Thể chất"
+        ],
+        "events": [
+            "Giải cầu lông truyền thống (14:30 - 17:30)"
+        ],
         "services": [
             {"id": "gym", "name": "Tập gym / fitness", "icon": "🏋️", "category": "the_thao",
              "keywords": ["gym", "tap", "the luc"]},
@@ -82,6 +161,12 @@ _BUILDING_PROFILES: Dict[str, dict] = {
     },
     "Nhà xe": {
         "tagline": "Bãi giữ xe sinh viên",
+        "departments": [
+            "Khu vực gửi xe máy Sinh viên",
+            "Khu vực gửi xe đạp điện",
+            "Trạm sạc xe điện"
+        ],
+        "events": [],
         "services": [
             {"id": "parking", "name": "Gửi / lấy xe máy", "icon": "🛵", "category": "tien_ich",
              "keywords": ["gui xe", "lay xe", "xe may", "parking"]},
@@ -91,6 +176,11 @@ _BUILDING_PROFILES: Dict[str, dict] = {
     },
     "ATM": {
         "tagline": "Rút tiền & giao dịch nhanh",
+        "departments": [
+            "Trụ ATM Vietcombank",
+            "Trụ ATM BIDV"
+        ],
+        "events": [],
         "services": [
             {"id": "atm", "name": "Cây ATM", "icon": "🏧", "category": "tien_ich",
              "keywords": ["atm", "rut tien", "tien mat"]},
@@ -98,6 +188,15 @@ _BUILDING_PROFILES: Dict[str, dict] = {
     },
     "Nhà điều hành": {
         "tagline": "Hành chính & giao vụ (khu hạn chế)",
+        "departments": [
+            "Phòng Đào tạo",
+            "Phòng Công tác Sinh viên",
+            "Phòng Kế hoạch Tài chính",
+            "Ban Giám hiệu"
+        ],
+        "events": [
+            "Họp giao ban Quản lý Đào tạo (10:00 - 11:30)"
+        ],
         "services": [
             {"id": "admin", "name": "Phòng ban / giao vụ", "icon": "🏛️", "category": "hanh_chinh",
              "keywords": ["giao vu", "giay to", "hanh chinh"]},
@@ -107,6 +206,11 @@ _BUILDING_PROFILES: Dict[str, dict] = {
     },
     "Cổng trường": {
         "tagline": "Lối vào chính campus",
+        "departments": [
+            "Bốt Bảo vệ chính",
+            "Trạm xe buýt nội khu ĐHQG"
+        ],
+        "events": [],
         "services": [
             {"id": "entrance", "name": "Check-in / vào campus", "icon": "🚧", "category": "tien_ich",
              "keywords": ["cong", "vao truong"]},
@@ -135,6 +239,8 @@ def get_building_profile(G: nx.Graph, node_id: str) -> dict:
     catalog = _BUILDING_PROFILES.get(node_id) or {}
     services = list(data.get("services") or catalog.get("services", []))
     tagline = data.get("tagline") or catalog.get("tagline", "")
+    departments = catalog.get("departments", [])
+    events = catalog.get("events", [])
 
     features = data.get("features", {})
     amenity_tags = []
@@ -156,6 +262,8 @@ def get_building_profile(G: nx.Graph, node_id: str) -> dict:
         "function_summary": function_summary,
         "services": services,
         "amenities": amenity_tags,
+        "departments": departments,
+        "events": events,
         "type": data.get("type", "building"),
         "restricted": bool(data.get("restricted", False)),
         "open_time": data.get("open_time"),
@@ -217,6 +325,8 @@ def enrich_suggestion(G: nx.Graph, item: dict, query: Optional[str] = None) -> d
     item["function_summary"] = profile.get("function_summary", "")
     item["services"] = profile.get("services", [])
     item["amenities"] = profile.get("amenities", [])
+    item["departments"] = profile.get("departments", [])
+    item["events"] = profile.get("events", [])
 
     if query and profile.get("services"):
         item["matched_services"] = match_services_to_query(query, profile["services"])
