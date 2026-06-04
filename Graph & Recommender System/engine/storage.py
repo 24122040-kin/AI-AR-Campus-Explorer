@@ -42,34 +42,74 @@ _cache_lock = Lock()
 
 def init_db() -> None:
     """Tạo bảng nếu chưa có. Gọi một lần khi server start."""
-    with _connect() as conn:
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS user_profiles (
-                session_id   TEXT PRIMARY KEY,
-                profile_json TEXT NOT NULL,
-                updated_at   REAL NOT NULL
-            )
-        """)
-        conn.execute("""
-            CREATE INDEX IF NOT EXISTS idx_profiles_updated
-            ON user_profiles(updated_at)
-        """)
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS comments (
-                id           INTEGER PRIMARY KEY AUTOINCREMENT,
-                node_id      TEXT NOT NULL,
-                session_id   TEXT NOT NULL,
-                content      TEXT NOT NULL,
-                created_at   REAL NOT NULL
-            )
-        """)
-        conn.execute("""
-            CREATE INDEX IF NOT EXISTS idx_comments_node
-            ON comments(node_id)
-        """)
+    conn = _connect()
+    try:
         # WAL mode: concurrent reads + writes
         conn.execute("PRAGMA journal_mode=WAL")
         conn.execute("PRAGMA synchronous=NORMAL")
+        with conn:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS user_profiles (
+                    session_id   TEXT PRIMARY KEY,
+                    profile_json TEXT NOT NULL,
+                    updated_at   REAL NOT NULL
+                )
+            """)
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_profiles_updated
+                ON user_profiles(updated_at)
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS comments (
+                    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                    node_id      TEXT NOT NULL,
+                    session_id   TEXT NOT NULL,
+                    content      TEXT NOT NULL,
+                    created_at   REAL NOT NULL
+                )
+            """)
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_comments_node
+                ON comments(node_id)
+            """)
+            # 1. Tạo bảng location_stats nếu chưa có
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS location_stats (
+                    node_id      TEXT PRIMARY KEY,
+                    likes_count  INTEGER DEFAULT 0,
+                    saves_count  INTEGER DEFAULT 0,
+                    search_count INTEGER DEFAULT 0,
+                    route_count  INTEGER DEFAULT 0
+                )
+            """)
+            # Check empty và seed dữ liệu baseline
+            row = conn.execute("SELECT COUNT(*) FROM location_stats").fetchone()
+            if row[0] == 0:
+                BASELINE_STATS = {
+                    "Căn tin":        {"likes": 1200, "saves": 192, "searches": 500, "routes": 400},
+                    "Thư viện Tòa D": {"likes": 850,  "saves": 340, "searches": 450, "routes": 350},
+                    "Nhà thể dục":    {"likes": 620,  "saves": 115, "searches": 200, "routes": 180},
+                    "Tòa B":          {"likes": 930,  "saves": 280, "searches": 480, "routes": 420},
+                    "Tòa A":          {"likes": 540,  "saves": 120, "searches": 300, "routes": 280},
+                    "Tòa C":          {"likes": 420,  "saves": 95,  "searches": 280, "routes": 250},
+                    "Tòa E":          {"likes": 310,  "saves": 75,  "searches": 150, "routes": 140},
+                    "Tòa F":          {"likes": 220,  "saves": 60,  "searches": 120, "routes": 110},
+                    "Tòa G":          {"likes": 180,  "saves": 40,  "searches": 100, "routes": 90},
+                    "Nhà xe":         {"likes": 1500, "saves": 210, "searches": 600, "routes": 550},
+                    "ATM":            {"likes": 290,  "saves": 50,  "searches": 130, "routes": 120},
+                    "Nhà điều hành":  {"likes": 150,  "saves": 35,  "searches": 80,  "routes": 70},
+                    "Cổng trường":    {"likes": 1800, "saves": 310, "searches": 700, "routes": 650},
+                }
+                for node, stats in BASELINE_STATS.items():
+                    conn.execute(
+                        """
+                        INSERT INTO location_stats (node_id, likes_count, saves_count, search_count, route_count)
+                        VALUES (?, ?, ?, ?, ?)
+                        """,
+                        (node, stats["likes"], stats["saves"], stats["searches"], stats["routes"])
+                    )
+    finally:
+        conn.close()
     print(f"✅ [Storage] SQLite DB sẵn sàng: {_DB_PATH}")
 
 
@@ -274,3 +314,132 @@ def delete_old_comments() -> int:
 def _today_start_ts() -> float:
     today = datetime.now().date()
     return datetime.combine(today, dt_time.min).timestamp()
+
+
+# ---------------------------------------------------------------------------
+# STATS INCREMENT & TOGGLE FUNCTIONS
+# ---------------------------------------------------------------------------
+
+def increment_search_count(node_id: str) -> None:
+    """Tăng số lượt tìm kiếm cho một địa điểm."""
+    with _connect() as conn:
+        conn.execute("""
+            INSERT INTO location_stats (node_id, search_count)
+            VALUES (?, 1)
+            ON CONFLICT(node_id) DO UPDATE SET search_count = search_count + 1
+        """, (node_id,))
+
+
+def increment_route_count(node_id: str) -> None:
+    """Tăng số lượt truy cập tìm đường cho một địa điểm."""
+    with _connect() as conn:
+        conn.execute("""
+            INSERT INTO location_stats (node_id, route_count)
+            VALUES (?, 1)
+            ON CONFLICT(node_id) DO UPDATE SET route_count = route_count + 1
+        """, (node_id,))
+
+
+def toggle_like(session_id: str, node_id: str) -> dict:
+    """Toggle lượt thích (tim) địa điểm, cập nhật cả profile và stats toàn cục."""
+    profile = load_profile(session_id)
+    if profile is None:
+        profile = {
+            "role":            "student",
+            "study_style":     "silent",
+            "interests":       ["hoc_tap"],
+            "visited_history": {},
+            "schedule_class":  "Tòa B",
+            "behavior_log":    {},
+            "search_history":  [],
+            "ratings":         {},
+            "likes":           [],
+            "saves":           [],
+            "_last_tracking":  {},
+        }
+    
+    likes = profile.setdefault("likes", [])
+    liked = False
+    
+    with _connect() as conn:
+        if node_id in likes:
+            likes.remove(node_id)
+            conn.execute("""
+                INSERT INTO location_stats (node_id, likes_count)
+                VALUES (?, 0)
+                ON CONFLICT(node_id) DO UPDATE SET likes_count = MAX(0, likes_count - 1)
+            """, (node_id,))
+        else:
+            likes.append(node_id)
+            conn.execute("""
+                INSERT INTO location_stats (node_id, likes_count)
+                VALUES (?, 1)
+                ON CONFLICT(node_id) DO UPDATE SET likes_count = likes_count + 1
+            """, (node_id,))
+            
+        row = conn.execute("SELECT likes_count FROM location_stats WHERE node_id=?", (node_id,)).fetchone()
+        likes_count = row["likes_count"] if row else 0
+        liked = node_id in likes
+        
+    save_profile(session_id, profile)
+    return {"liked": liked, "likes_count": likes_count}
+
+
+def toggle_save(session_id: str, node_id: str) -> dict:
+    """Toggle lượt lưu địa điểm, cập nhật cả profile và stats toàn cục."""
+    profile = load_profile(session_id)
+    if profile is None:
+        profile = {
+            "role":            "student",
+            "study_style":     "silent",
+            "interests":       ["hoc_tap"],
+            "visited_history": {},
+            "schedule_class":  "Tòa B",
+            "behavior_log":    {},
+            "search_history":  [],
+            "ratings":         {},
+            "likes":           [],
+            "saves":           [],
+            "_last_tracking":  {},
+        }
+        
+    saves = profile.setdefault("saves", [])
+    saved = False
+    
+    with _connect() as conn:
+        if node_id in saves:
+            saves.remove(node_id)
+            conn.execute("""
+                INSERT INTO location_stats (node_id, saves_count)
+                VALUES (?, 0)
+                ON CONFLICT(node_id) DO UPDATE SET saves_count = MAX(0, saves_count - 1)
+            """, (node_id,))
+        else:
+            saves.append(node_id)
+            conn.execute("""
+                INSERT INTO location_stats (node_id, saves_count)
+                VALUES (?, 1)
+                ON CONFLICT(node_id) DO UPDATE SET saves_count = saves_count + 1
+            """, (node_id,))
+            
+        row = conn.execute("SELECT saves_count FROM location_stats WHERE node_id=?", (node_id,)).fetchone()
+        saves_count = row["saves_count"] if row else 0
+        saved = node_id in saves
+        
+    save_profile(session_id, profile)
+    return {"saved": saved, "saves_count": saves_count}
+
+
+def get_all_location_stats() -> Dict[str, dict]:
+    """Lấy thống kê lượt like, save, search, route của toàn bộ địa điểm."""
+    with _connect() as conn:
+        rows = conn.execute("SELECT node_id, likes_count, saves_count, search_count, route_count FROM location_stats").fetchall()
+    return {
+        row["node_id"]: {
+            "likes": row["likes_count"],
+            "saves": row["saves_count"],
+            "searches": row["search_count"],
+            "routes": row["route_count"]
+        }
+        for row in rows
+    }

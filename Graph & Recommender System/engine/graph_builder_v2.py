@@ -173,6 +173,110 @@ def build_flat_campus_graph() -> nx.Graph:
         attr["weight"] = dist
         G.add_edge(u, v, **attr)
 
+    # ---------------------------------------------------------
+    # 3. ĐỊNH NGHĨA INDOOR MULTI-FLOOR NODES & EDGES (Tầng toà nhà)
+    # ---------------------------------------------------------
+    indoor_configs = {
+        "Tòa A": {
+            "center": (10.877500, 106.797500),
+            "floors": {
+                "G": ["Phòng A.G01", "Phòng A.G02"],
+                "1": ["Phòng A.101", "Phòng A.102"],
+                "2": ["Phòng A.201 (Lab AI)", "Phòng A.202"],
+                "3": ["Phòng A.301", "Phòng A.302"]
+            }
+        },
+        "Tòa B": {
+            "center": (10.877500, 106.798000),
+            "floors": {
+                "G": ["Phòng B.G01"],
+                "1": ["Phòng B.101", "Phòng B.102"],
+                "2": ["Phòng tự học B201", "Phòng B.202"],
+                "3": ["Phòng máy B301", "Phòng B.302"]
+            }
+        },
+        "Tòa C": {
+            "center": (10.877500, 106.798500),
+            "floors": {
+                "G": ["Văn phòng Khoa C"],
+                "1": ["Phòng C.101", "Phòng C.102"],
+                "2": ["Phòng máy 202", "Phòng C.202"]
+            }
+        },
+        "Tòa D": {
+            "center": (10.878000, 106.798750),
+            "floors": {
+                "G": ["Quầy Giáo trình D"],
+                "1": ["Thư viện Tòa D", "Phòng Y tế"],
+                "2": ["Thư viện Tầng 2"]
+            }
+        }
+    }
+
+    # Đặt thuộc tính mặc định cho các node campus ngoài trời
+    for n in G.nodes:
+        G.nodes[n]["building"] = n if n in indoor_configs else None
+        G.nodes[n]["floor"] = "G" if n in indoor_configs else None
+        G.nodes[n]["is_indoor"] = False
+
+    for b_name, config in indoor_configs.items():
+        lat_c, lon_c = config["center"]
+        floors = config["floors"]
+        
+        # Thang và Sảnh xuyên suốt các tầng
+        for floor, rooms in floors.items():
+            lobby = f"Sảnh {b_name} ({floor})"
+            stairs = f"Cầu thang bộ {b_name} ({floor})"
+            elevator = f"Thang máy {b_name} ({floor})"
+            
+            # Tọa độ phụ trợ
+            # Lobbies ở tâm tòa nhà
+            # Cầu thang góc Đông Bắc (offset y+, x-)
+            # Thang máy góc Tây Bắc (offset y+, x+)
+            G.add_node(lobby, pos=(lon_c, lat_c), gps=(lat_c, lon_c), type="lobby", building=b_name, floor=floor, is_indoor=True, open_time="06:00", close_time="18:00", aliases=[lobby.lower()])
+            G.add_node(stairs, pos=(lon_c - 0.00008, lat_c + 0.00008), gps=(lat_c + 0.00008, lon_c - 0.00008), type="stairs", building=b_name, floor=floor, is_indoor=True, open_time="06:00", close_time="18:00", aliases=[stairs.lower(), f"cầu thang {b_name}".lower()])
+            G.add_node(elevator, pos=(lon_c + 0.00008, lat_c + 0.00008), gps=(lat_c + 0.00008, lon_c + 0.00008), type="elevator", building=b_name, floor=floor, is_indoor=True, open_time="06:00", close_time="18:00", aliases=[elevator.lower(), f"thang máy {b_name}".lower()])
+            
+            # Kết nối ngang trên tầng
+            G.add_edge(lobby, stairs, has_roof=True, status="open", edge_type="corridor", weight=10.0)
+            G.add_edge(lobby, elevator, has_roof=True, status="open", edge_type="corridor", weight=10.0)
+            
+            # Thêm các phòng
+            for idx, room in enumerate(rooms):
+                # Phòng bố trí góc Nam (y-)
+                # Room 0: Tây Nam, Room 1: Đông Nam
+                if len(rooms) == 1:
+                    r_lat = lat_c - 0.00008
+                    r_lon = lon_c
+                else:
+                    r_lat = lat_c - 0.00008
+                    r_lon = lon_c - 0.00008 if idx == 0 else lon_c + 0.00008
+                    
+                # Tạo aliases thông minh
+                r_aliases = [room.lower(), room.replace("Phòng ", "").lower(), f"{b_name} {room}".lower()]
+                G.add_node(room, pos=(r_lon, r_lat), gps=(r_lat, r_lon), type="room", building=b_name, floor=floor, is_indoor=True, open_time="06:00", close_time="18:00", aliases=r_aliases)
+                G.add_edge(lobby, room, has_roof=True, status="open", edge_type="corridor", weight=12.0)
+            
+            # Kết nối Sảnh G với Node tòa nhà campus ngoài trời
+            if floor == "G":
+                G.add_edge(b_name, lobby, has_roof=True, status="open", edge_type="corridor", weight=2.0)
+
+        # Kết nối dọc các tầng (Cầu thang & Thang máy)
+        floor_keys = list(floors.keys())  # ["G", "1", "2", "3"]
+        for i in range(len(floor_keys) - 1):
+            f_curr = floor_keys[i]
+            f_next = floor_keys[i+1]
+            
+            stairs_curr = f"Cầu thang bộ {b_name} ({f_curr})"
+            stairs_next = f"Cầu thang bộ {b_name} ({f_next})"
+            elevator_curr = f"Thang máy {b_name} ({f_curr})"
+            elevator_next = f"Thang máy {b_name} ({f_next})"
+            
+            # Cầu thang: weight = 15m đi bộ lên tầng
+            G.add_edge(stairs_curr, stairs_next, has_roof=True, status="open", edge_type="stairs", weight=15.0)
+            # Thang máy: weight = 8m (nhanh hơn đi bộ)
+            G.add_edge(elevator_curr, elevator_next, has_roof=True, status="open", edge_type="elevator", weight=8.0)
+
     return G
 
 

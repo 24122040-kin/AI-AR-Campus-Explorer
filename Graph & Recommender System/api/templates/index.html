@@ -1109,6 +1109,25 @@
     box-shadow: inset 0 0 150px rgba(0,0,0,0.85); /* Deep shadow overlay for text readability */
     border-bottom: 1px solid rgba(255,255,255,0.05);
   }
+  .web-slide-video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 1;
+  }
+  .web-slide-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    box-shadow: inset 0 0 150px rgba(0,0,0,0.85);
+    z-index: 2;
+    pointer-events: none;
+  }
 
   /* Full screen WebAR Floating Markers directly overlaying slides */
   .webar-viewport {
@@ -1539,6 +1558,320 @@
     background: #38bdf8;
     box-shadow: 0 0 10px rgba(0, 210, 255, 0.4);
   }
+
+  /* FLOOR SELECTOR PANEL */
+  .floor-selector-container {
+    position: absolute;
+    bottom: 30px;
+    right: 20px;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 140px;
+    align-items: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .floor-selector-header {
+    font-family: var(--font-title);
+    font-weight: 700;
+    color: #fff;
+    font-size: 0.95rem;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    width: 100%;
+    padding-bottom: 6px;
+  }
+
+  .floor-selector-buttons {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .floor-btn {
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: #cbd5e1;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+    text-align: center;
+  }
+
+  .floor-btn:hover {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: #10b981;
+    color: #fff;
+  }
+
+  .floor-btn.active {
+    background: #10b981;
+    border-color: #34d399;
+    color: #fff;
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+  }
+
+  .floor-back-btn {
+    background: transparent;
+    border: 1px dashed rgba(239, 68, 68, 0.5);
+    color: #f87171;
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 4px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .floor-back-btn:hover {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: #ef4444;
+    color: #fff;
+  }
+
+  /* 2.5D TRANSITION POPUP CARD */
+  .transition-popup-card {
+    position: absolute;
+    bottom: 30px;
+    left: 20px;
+    background: rgba(15, 23, 42, 0.9);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    max-width: 320px;
+    animation: slideInLeft 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  @keyframes slideInLeft {
+    from { transform: translateX(-30px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+
+  .transition-icon-container {
+    width: 48px;
+    height: 48px;
+    background: rgba(16, 185, 129, 0.15);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+  }
+
+  .transition-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .transition-title {
+    font-family: var(--font-title);
+    font-weight: 700;
+    color: #fff;
+    font-size: 0.9rem;
+  }
+
+  .transition-subtitle {
+    color: #94a3b8;
+    font-size: 0.78rem;
+    line-height: 1.3;
+  }
+
+  .transition-ar-btn {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 4px;
+    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .transition-ar-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(16, 185, 129, 0.4);
+  }
+
+  /* AR CAMERA VIEWFINDER OVERLAY */
+  .ar-camera-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(15,23,42,0.4) 0%, rgba(2,6,23,0.9) 100%);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(8px);
+    overflow: hidden;
+  }
+
+  .ar-camera-viewfinder {
+    position: relative;
+    width: 90%;
+    height: 90%;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    background: rgba(10, 15, 30, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ar-bracket {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    border-color: #00d2ff;
+    border-style: solid;
+    border-width: 0;
+  }
+  .ar-bracket.top-left { top: 20px; left: 20px; border-top-width: 3px; border-left-width: 3px; border-top-left-radius: 8px; }
+  .ar-bracket.top-right { top: 20px; right: 20px; border-top-width: 3px; border-right-width: 3px; border-top-right-radius: 8px; }
+  .ar-bracket.bottom-left { bottom: 20px; left: 20px; border-bottom-width: 3px; border-left-width: 3px; border-bottom-left-radius: 8px; }
+  .ar-bracket.bottom-right { bottom: 20px; right: 20px; border-bottom-width: 3px; border-right-width: 3px; border-bottom-right-radius: 8px; }
+
+  .ar-camera-rec-dot {
+    position: absolute;
+    top: 25px;
+    left: 70px;
+    width: 12px;
+    height: 12px;
+    background: #ef4444;
+    border-radius: 50%;
+    animation: blink-rec 1s infinite alternate;
+  }
+
+  @keyframes blink-rec {
+    from { opacity: 0.2; }
+    to { opacity: 1; }
+  }
+
+  .ar-3d-arrow-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transform: perspective(600px) rotateX(25deg);
+  }
+
+  .ar-3d-arrow-vertical.bounce-up {
+    animation: arrow-bounce-up 1.4s infinite ease-in-out;
+  }
+
+  .ar-3d-arrow-vertical.bounce-down {
+    transform: rotate(180deg);
+    animation: arrow-bounce-down 1.4s infinite ease-in-out;
+  }
+
+  @keyframes arrow-bounce-up {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+  }
+
+  @keyframes arrow-bounce-down {
+    0%, 100% { transform: rotate(180deg) translateY(0); }
+    50% { transform: rotate(180deg) translateY(-20px); }
+  }
+
+  .ar-3d-arrow-shadow {
+    width: 60px;
+    height: 12px;
+    background: rgba(16, 185, 129, 0.2);
+    border-radius: 50%;
+    margin-top: 15px;
+    filter: blur(4px);
+    animation: arrow-shadow-pulse 1.4s infinite ease-in-out;
+  }
+
+  @keyframes arrow-shadow-pulse {
+    0%, 100% { transform: scale(1); opacity: 0.6; }
+    50% { transform: scale(0.6); opacity: 0.2; }
+  }
+
+  .ar-camera-instructions {
+    position: absolute;
+    bottom: 40px;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px 20px;
+    text-align: center;
+    max-width: 80%;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    z-index: 2;
+  }
+
+  .ar-instruction-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #00d2ff;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .ar-instruction-text {
+    font-size: 0.9rem;
+    color: #fff;
+    font-weight: 600;
+  }
+
+  .ar-camera-close-btn {
+    position: absolute;
+    top: 20px;
+    right: 70px;
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: #cbd5e1;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 3;
+  }
+
+  .ar-camera-close-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: #ef4444;
+    color: #fff;
+  }
 </style>
 </head>
 <body>
@@ -1833,6 +2166,56 @@
     </button>
     <canvas id="canvas"></canvas>
     
+    <!-- Floor Selector Overlay -->
+    <div id="floor-selector-panel" class="floor-selector-container" style="display: none;">
+      <div class="floor-selector-header">
+        <span id="floor-building-title">Tòa A</span>
+      </div>
+      <div class="floor-selector-buttons" id="floor-selector-buttons"></div>
+      <button class="floor-back-btn" onclick="exitIndoorMap()">
+        ◀ Campus Map
+      </button>
+    </div>
+
+    <!-- MOCKUP AR CAMERA VIEWPORT OVERLAY -->
+    <div id="ar-camera-overlay" class="ar-camera-container" style="display: none;">
+      <div class="ar-camera-viewfinder">
+        <div class="ar-bracket top-left"></div>
+        <div class="ar-bracket top-right"></div>
+        <div class="ar-bracket bottom-left"></div>
+        <div class="ar-bracket bottom-right"></div>
+        <div class="ar-camera-rec-dot"></div>
+        
+        <div class="ar-3d-arrow-container" id="ar-3d-arrow-container">
+          <div class="ar-3d-arrow-vertical bounce-up" id="ar-3d-arrow-graphic">
+            <svg viewBox="0 0 100 100" width="80" height="80">
+              <defs>
+                <linearGradient id="arrow-grad-view" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#34d399" />
+                  <stop offset="100%" stop-color="#059669" />
+                </linearGradient>
+                <filter id="neon-glow-view" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="6" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
+              <path d="M 50 10 L 90 55 L 65 55 L 65 90 L 35 90 L 35 55 L 10 55 Z" fill="url(#arrow-grad-view)" filter="url(#neon-glow-view)" />
+            </svg>
+          </div>
+          <div class="ar-3d-arrow-shadow"></div>
+        </div>
+        
+        <div class="ar-camera-instructions">
+          <div class="ar-instruction-title">🎯 Đang đồng bộ hóa AR...</div>
+          <div class="ar-instruction-text" id="ar-camera-instruction-text">Đi cầu thang bộ lên Tầng 2 từ Tầng 1</div>
+        </div>
+        
+        <button class="ar-camera-close-btn" onclick="closeArCameraOverlay()">
+          ✕ Đóng AR
+        </button>
+      </div>
+    </div>
+    
     <!-- LEGEND -->
     <div class="legend">
       <div class="leg"><span class="leg-dot" style="background:#0f766e; box-shadow: 0 0 6px #0f766e"></span>Mở cửa</div>
@@ -1957,6 +2340,11 @@
 
         <!-- Slide 2: Thư viện Tòa D -->
         <div class="web-slide" style="background-image: url('/static/library.jpg')">
+          <video id="video-toa-d" class="web-slide-video" autoplay muted playsinline>
+            <source src="/video_graph/Toa_D.MOV" type="video/quicktime">
+            <source src="/video_graph/Toa_D.MOV" type="video/mp4">
+          </video>
+          <div class="web-slide-overlay"></div>
           
           <!-- WebAR Floating Markers overlay -->
           <div class="webar-viewport">
@@ -2888,8 +3276,23 @@ function drawGraph(path=[]){
   const ps = new Set();
   for(let i=0;i<path.length-1;i++){ps.add(path[i]+'|'+path[i+1]);ps.add(path[i+1]+'|'+path[i]);}
 
+  // Lọc nodes và edges dựa trên chế độ xem Campus hay Indoor
+  let visibleNodes = [];
+  let visibleEdges = [];
+  
+  if (activeBuilding && activeFloor) {
+    visibleNodes = G.nodes.filter(n => n.building === activeBuilding && n.floor === activeFloor);
+    const visibleNodeIds = new Set(visibleNodes.map(n => n.id));
+    visibleEdges = G.edges.filter(e => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target));
+  } else {
+    // Ẩn tất cả các node/edge có is_indoor === true trên bản đồ campus để giữ sự ngăn nắp
+    visibleNodes = G.nodes.filter(n => !n.is_indoor);
+    const visibleNodeIds = new Set(visibleNodes.map(n => n.id));
+    visibleEdges = G.edges.filter(e => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target));
+  }
+
   // Vẽ các đường nối (Edges)
-  G.edges.forEach(e=>{
+  visibleEdges.forEach(e=>{
     const n1=nm[e.source],n2=nm[e.target];
     if(!n1||!n2) return;
     const p1=toCanvas(n1.x,n1.y),p2=toCanvas(n2.x,n2.y);
@@ -2922,7 +3325,7 @@ function drawGraph(path=[]){
   ctx.setLineDash([]);
 
   // Vẽ các nút địa điểm (Nodes)
-  G.nodes.forEach(n=>{
+  visibleNodes.forEach(n=>{
     const p=toCanvas(n.x,n.y);
     const active=path.includes(n.id);
     
@@ -2934,17 +3337,45 @@ function drawGraph(path=[]){
     }
 
     ctx.beginPath(); ctx.arc(p.cx,p.cy,11,0,2*Math.PI);
-    ctx.fillStyle=active?'#10b981':(n.is_open?'#0f766e':'#7f1d1d');
+    
+    // Đổi màu đặc biệt cho cầu thang/thang máy/phòng
+    let fillColor = active?'#10b981':(n.is_open?'#0f766e':'#7f1d1d');
+    if (!active) {
+      if (n.type === 'stairs') fillColor = '#d97706'; // Màu cam cho cầu thang bộ
+      else if (n.type === 'elevator') fillColor = '#0284c7'; // Màu xanh dương cho thang máy
+    }
+    
+    ctx.fillStyle=fillColor;
     ctx.fill(); 
     
     ctx.strokeStyle=active?'#34d399':'#475569'; 
     ctx.lineWidth=active?2.5:1.5; 
     ctx.stroke();
     
+    // Tên nhãn node: thay đổi icon tùy loại node
+    let label = n.id;
+    if (n.type === 'stairs') label = '🧗 Thang bộ';
+    else if (n.type === 'elevator') label = '🛗 Thang máy';
+    else {
+      const BUILDING_FLOORS = {
+        "Tòa A": "4 tầng",
+        "Tòa B": "4 tầng",
+        "Tòa C": "3 tầng",
+        "Tòa D": "3 tầng",
+        "Tòa E": "3 tầng",
+        "Tòa F": "2 tầng",
+        "Tòa G": "2 tầng",
+        "Nhà thể dục": "1 tầng"
+      };
+      if (BUILDING_FLOORS[n.id]) {
+        label = `${n.id} (${BUILDING_FLOORS[n.id]})`;
+      }
+    }
+    
     ctx.fillStyle=active?'#fff':'#cbd5e1'; 
     ctx.font=(active?'bold ':'')+'9px Outfit, sans-serif';
     ctx.textAlign='center'; 
-    ctx.fillText(n.id,p.cx,p.cy-16);
+    ctx.fillText(label,p.cx,p.cy-16);
   });
 
   // Vẽ vị trí GPS phụ trợ (Raw & Kalman) nếu đang giả lập/định vị và bật nhiễu
@@ -3068,12 +3499,16 @@ async function findRoute(){
       `✅ Lộ trình: <b>${d.path.join(' → ')}</b><br>📏 ${d.total_distance_m}m (~${d.estimated_mins} phút) | ${d.routing_engine}`;
     toast('Tìm đường thành công! Có thể chạy mô phỏng di chuyển.');
     
-    const nm = Object.fromEntries(G.nodes.map(n=>[n.id,n]));
-    const startNode = nm[s];
-    if(startNode && !isCurrentGpsSelected) {
+    // Luôn giữ ở bản đồ trường học ngoài trời, không tự động chuyển sơ đồ tầng
+    exitIndoorMap();
+    
+    checkFloorTransitions();
+    
+    const startNodeData = nm[s];
+    if(startNodeData && !isCurrentGpsSelected) {
       gpsPos = {
-        lat: startNode.gps[0],
-        lon: startNode.gps[1]
+        lat: startNodeData.gps[0],
+        lon: startNodeData.gps[1]
       };
       actualGpsPos = { ...gpsPos };
       kalmanLat.reset();
@@ -3105,6 +3540,8 @@ canvas.addEventListener('mousedown', async e=>{
   const lon=BOUNDS.minX+(cx-MARGIN)/W*(BOUNDS.maxX-BOUNDS.minX);
   const lat=BOUNDS.minY+(canvas.height-MARGIN-cy)/H*(BOUNDS.maxY-BOUNDS.minY);
   
+  // Đã tắt tính năng chuyển sơ đồ tầng khi click tòa nhà
+
   actualGpsPos = { lat, lon };
   
   // Reset bộ lọc Kalman
@@ -3267,6 +3704,7 @@ async function sendTrackingUpdate(lat, lon) {
   
   if(d.status==='tracking'){
     currentPath=d.path;
+    checkFloorTransitions();
     document.getElementById('status').innerHTML=
       `📍 GPS Snap: <b>${d.snapped_node}</b> (${d.dist_to_node_m}m)<br>`+
       `📏 Lộ trình còn lại: ${d.total_remaining_meters}m (~${d.estimated_mins} phút)`;
@@ -3940,6 +4378,59 @@ loadGraph().then(async () => {
 // --- JAVASCRIPT LOGIC FOR CAMPUS LENS VIEW ---
 let activeWebSlideIndex = 0;
 let isWebarLocationListCollapsed = false;
+
+function initToaDVideo() {
+  const video = document.getElementById('video-toa-d');
+  if (!video) return;
+
+  let isReversing = false;
+  let lastTime = 0;
+
+  function step(timestamp) {
+    if (!isReversing) return;
+    if (video.paused) {
+      isReversing = false;
+      lastTime = 0;
+      return;
+    }
+    if (!lastTime) lastTime = timestamp;
+    let elapsed = timestamp - lastTime;
+    
+    if (elapsed > 0) {
+      let nextTime = video.currentTime - (elapsed / 1000);
+      if (nextTime <= 0.05) {
+        video.currentTime = 0;
+        isReversing = false;
+        lastTime = 0;
+        const activeNode = showcaseNodes[activeWebSlideIndex];
+        if (activeNode && activeNode.id === 'Thư viện Tòa D') {
+          video.play().catch(e => {});
+        }
+      } else {
+        video.currentTime = nextTime;
+        lastTime = timestamp;
+        requestAnimationFrame(step);
+      }
+    } else {
+      requestAnimationFrame(step);
+    }
+  }
+
+  video.addEventListener('ended', () => {
+    isReversing = true;
+    lastTime = 0;
+    requestAnimationFrame(step);
+  });
+
+  video.addEventListener('timeupdate', () => {
+    if (!isReversing && video.currentTime >= video.duration - 0.1 && video.duration > 0) {
+      video.pause();
+      isReversing = true;
+      lastTime = 0;
+      requestAnimationFrame(step);
+    }
+  });
+}
 let showcaseNodes = [
   { id: 'Căn tin', key: 'canteen', defaultScore: 92 },
   { id: 'Thư viện Tòa D', key: 'library', defaultScore: 88 },
@@ -3998,14 +4489,30 @@ async function updateArTikTokMatchScores() {
   }
   
   let ratings = {};
+  let serverLikes = [];
+  let serverSaves = [];
   try {
     let r2 = await fetchWithSession('/api_user_profile');
     let d2 = await r2.json();
     if (d2.status === 'success') {
       ratings = d2.user_profile.ratings || {};
+      serverLikes = d2.user_profile.likes || [];
+      serverSaves = d2.user_profile.saves || [];
+      
+      // Đồng bộ local userFavorites
+      userFavorites.liked = serverLikes.map(id => {
+        const item = showcaseNodes.find(x => x.id === id);
+        return item ? item.key : null;
+      }).filter(Boolean);
+      userFavorites.saved = serverSaves.map(id => {
+        const item = showcaseNodes.find(x => x.id === id);
+        return item ? item.key : null;
+      }).filter(Boolean);
+      localStorage.setItem('campus_user_favorites', JSON.stringify(userFavorites));
+      renderFavoritesTab();
     }
   } catch (e) {
-    console.warn("Failed to fetch user ratings", e);
+    console.warn("Failed to fetch user profile details", e);
   }
   
   const rCountEl = document.getElementById('ar-ratings-count');
@@ -4034,6 +4541,21 @@ async function updateArTikTokMatchScores() {
     
     const matchEl = document.getElementById(`ar-match-${node.key}`);
     if (matchEl) matchEl.textContent = `${finalScore}%`;
+    
+    // Tự động kích hoạt trạng thái liked / saved của các button
+    const isLiked = serverLikes.includes(node.id);
+    const isSaved = serverSaves.includes(node.id);
+    
+    const likeBtn = document.getElementById(`like-${node.key}`);
+    const saveBtn = document.getElementById(`save-${node.key}`);
+    if (likeBtn) {
+      likeBtn.classList.toggle('liked', isLiked);
+      likeBtn.querySelector('.web-action-icon').textContent = isLiked ? '❤️' : '🤍';
+    }
+    if (saveBtn) {
+      saveBtn.classList.toggle('saved', isSaved);
+      saveBtn.querySelector('.web-action-icon').style.color = isSaved ? '#facc15' : '#fff';
+    }
   });
   
   showcaseNodes.forEach(node => {
@@ -4138,6 +4660,17 @@ function handleWebScroll() {
   document.querySelectorAll('.web-scroll-dot').forEach((dot, i) => {
     dot.classList.toggle('active', i === activeIndex);
   });
+
+  // Control video playback based on active node
+  const activeNode = showcaseNodes[activeIndex];
+  const video = document.getElementById('video-toa-d');
+  if (video) {
+    if (activeNode && activeNode.id === 'Thư viện Tòa D') {
+      video.play().catch(e => {});
+    } else {
+      video.pause();
+    }
+  }
 }
 
 function focusWebSlide(index) {
@@ -4192,71 +4725,74 @@ function toggleWebarLocationList() {
   if (icon) icon.textContent = isWebarLocationListCollapsed ? '⌖' : '▤';
 }
 
-function toggleLike(key) {
-  const btn = document.getElementById(`like-${key}`);
-  const countEl = document.getElementById(`count-like-${key}`);
-  if (!btn || !countEl) return;
-  
-  const isLiked = btn.classList.toggle('liked');
-  let currentVal = parseFloat(countEl.textContent);
-  if (countEl.textContent.includes('k')) {
-    currentVal = parseFloat(countEl.textContent) * 1000;
-  }
-  
-  if (isLiked) {
-    btn.querySelector('.web-action-icon').textContent = '❤️';
-    currentVal += 1;
-    if (!userFavorites.liked.includes(key)) {
-      userFavorites.liked.push(key);
-    }
-  } else {
-    btn.querySelector('.web-action-icon').textContent = '🤍';
-    currentVal -= 1;
-    const idx = userFavorites.liked.indexOf(key);
-    if (idx > -1) {
-      userFavorites.liked.splice(idx, 1);
-    }
-  }
-  
-  currentVal = Math.max(0, currentVal);
-  countEl.textContent = currentVal >= 1000 ? (currentVal / 1000).toFixed(1) + 'k' : currentVal;
-  
-  localStorage.setItem('campus_user_favorites', JSON.stringify(userFavorites));
-  renderFavoritesTab();
+async function toggleLike(key) {
   const info = locationKeyInfo[key] || { name: key };
-  toast(isLiked ? `Đã thêm ${info.name} vào tab Tim/Lưu.` : `Đã bỏ thích ${info.name}.`);
+  const nodeId = info.name;
+  try {
+    const res = await fetchWithSession(`/api_toggle_like?node_id=${encodeURIComponent(nodeId)}`, { method: 'POST' });
+    const d = await res.json();
+    if (res.ok) {
+      const isLiked = d.liked;
+      const newCount = d.likes_count;
+      
+      const btn = document.getElementById(`like-${key}`);
+      const countEl = document.getElementById(`count-like-${key}`);
+      if (btn && countEl) {
+        btn.classList.toggle('liked', isLiked);
+        btn.querySelector('.web-action-icon').textContent = isLiked ? '❤️' : '🤍';
+        countEl.textContent = newCount >= 1000 ? (newCount / 1000).toFixed(1) + 'k' : newCount;
+      }
+      
+      // Cập nhật favorites cục bộ
+      const idx = userFavorites.liked.indexOf(key);
+      if (isLiked) {
+        if (idx === -1) userFavorites.liked.push(key);
+      } else {
+        if (idx > -1) userFavorites.liked.splice(idx, 1);
+      }
+      localStorage.setItem('campus_user_favorites', JSON.stringify(userFavorites));
+      renderFavoritesTab();
+      toast(isLiked ? `Đã thêm ${nodeId} vào tab Tim/Lưu.` : `Đã bỏ thích ${nodeId}.`);
+      await applyTrendingOrdering();
+    }
+  } catch (e) {
+    console.error("Error toggling like", e);
+  }
 }
 
-function toggleSave(key) {
-  const btn = document.getElementById(`save-${key}`);
-  const countEl = document.getElementById(`count-save-${key}`);
-  if (!btn || !countEl) return;
-  
-  const isSaved = btn.classList.toggle('saved');
-  let currentVal = parseInt(countEl.textContent);
-  
-  if (isSaved) {
-    btn.querySelector('.web-action-icon').style.color = '#facc15';
-    currentVal += 1;
-    if (!userFavorites.saved.includes(key)) {
-      userFavorites.saved.push(key);
-    }
-  } else {
-    btn.querySelector('.web-action-icon').style.color = '#fff';
-    currentVal -= 1;
-    const idx = userFavorites.saved.indexOf(key);
-    if (idx > -1) {
-      userFavorites.saved.splice(idx, 1);
-    }
-  }
-  
-  currentVal = Math.max(0, currentVal);
-  countEl.textContent = currentVal;
-  
-  localStorage.setItem('campus_user_favorites', JSON.stringify(userFavorites));
-  renderFavoritesTab();
+async function toggleSave(key) {
   const info = locationKeyInfo[key] || { name: key };
-  toast(isSaved ? `Đã lưu ${info.name} vào tab Tim/Lưu.` : `Đã bỏ lưu ${info.name}.`);
+  const nodeId = info.name;
+  try {
+    const res = await fetchWithSession(`/api_toggle_save?node_id=${encodeURIComponent(nodeId)}`, { method: 'POST' });
+    const d = await res.json();
+    if (res.ok) {
+      const isSaved = d.saved;
+      const newCount = d.saves_count;
+      
+      const btn = document.getElementById(`save-${key}`);
+      const countEl = document.getElementById(`count-save-${key}`);
+      if (btn && countEl) {
+        btn.classList.toggle('saved', isSaved);
+        btn.querySelector('.web-action-icon').style.color = isSaved ? '#facc15' : '#fff';
+        countEl.textContent = newCount >= 1000 ? (newCount / 1000).toFixed(1) + 'k' : newCount;
+      }
+      
+      // Cập nhật favorites cục bộ
+      const idx = userFavorites.saved.indexOf(key);
+      if (isSaved) {
+        if (idx === -1) userFavorites.saved.push(key);
+      } else {
+        if (idx > -1) userFavorites.saved.splice(idx, 1);
+      }
+      localStorage.setItem('campus_user_favorites', JSON.stringify(userFavorites));
+      renderFavoritesTab();
+      toast(isSaved ? `Đã lưu ${nodeId} vào tab Tim/Lưu.` : `Đã bỏ lưu ${nodeId}.`);
+      await applyTrendingOrdering();
+    }
+  } catch (e) {
+    console.error("Error toggling save", e);
+  }
 }
 
 // --- COLLAPSIBLE TASKBAR LOGIC ---
@@ -4520,6 +5056,38 @@ async function applyTrendingOrdering() {
     if (d.status === 'success' && d.trending) {
       const trendingList = d.trending;
       
+      // Cập nhật số lượt Like và Save từ backend lên các slide tương ứng
+      trendingList.forEach(item => {
+        const keyMap = { 
+          'Căn tin': 'canteen', 
+          'Thư viện Tòa D': 'library', 
+          'Nhà thể dục': 'gym', 
+          'Tòa B': 'toa_b',
+          'Tòa A': 'toa_a',
+          'Tòa C': 'toa_c',
+          'Tòa E': 'toa_e',
+          'Tòa F': 'toa_f',
+          'Tòa G': 'toa_g',
+          'Nhà xe': 'parking',
+          'ATM': 'atm',
+          'Nhà điều hành': 'admin',
+          'Cổng trường': 'gate'
+        };
+        const key = keyMap[item.node];
+        if (key) {
+          const lCount = document.getElementById(`count-like-${key}`);
+          const sCount = document.getElementById(`count-save-${key}`);
+          if (lCount) {
+            const lc = item.likes;
+            lCount.textContent = lc >= 1000 ? (lc / 1000).toFixed(1) + 'k' : lc;
+          }
+          if (sCount) {
+            const sc = item.saves;
+            sCount.textContent = sc >= 1000 ? (sc / 1000).toFixed(1) + 'k' : sc;
+          }
+        }
+      });
+
       const currentActiveNode = showcaseNodes[activeWebSlideIndex] ? showcaseNodes[activeWebSlideIndex].id : 'Căn tin';
       
       showcaseNodes.sort((a, b) => {
@@ -4577,6 +5145,172 @@ function rebuildCarouselAndDots() {
     const activeClass = i === activeWebSlideIndex ? 'active' : '';
     return `<div class="web-scroll-dot ${activeClass}" onclick="focusWebSlide(${i})" id="web-dot-${i}" title="${node.id}"></div>`;
   }).join('');
+}
+
+// --- INDOOR FLOORS & 2.5D NAVIGATION EXTENSION ---
+let activeBuilding = null;
+let activeFloor = null;
+let CAMPUS_BOUNDS = null;
+
+// Khởi tạo bounds campus gốc
+window.addEventListener('load', () => {
+  CAMPUS_BOUNDS = { ...BOUNDS };
+  initToaDVideo();
+});
+
+function showFloorSelector(bName) {
+  const floors = {
+    "Tòa A": ["G", "1", "2", "3"],
+    "Tòa B": ["G", "1", "2", "3"],
+    "Tòa C": ["G", "1", "2"],
+    "Tòa D": ["G", "1", "2"]
+  };
+  
+  const bFloors = floors[bName];
+  if (!bFloors) {
+    document.getElementById('floor-selector-panel').style.display = 'none';
+    return;
+  }
+  
+  activeBuilding = bName;
+  if (!activeFloor) activeFloor = "G";
+  
+  document.getElementById('floor-building-title').textContent = bName;
+  
+  const buttonsDiv = document.getElementById('floor-selector-buttons');
+  buttonsDiv.innerHTML = bFloors.map(fl => {
+    const activeClass = fl === activeFloor ? 'active' : '';
+    return `<button class="floor-btn ${activeClass}" onclick="selectFloor('${fl}')">Tầng ${fl}</button>`;
+  }).join('');
+  
+  document.getElementById('floor-selector-panel').style.display = 'flex';
+  
+  recalculateCanvasBoundsForIndoor();
+  drawGraph(currentPath);
+}
+
+function selectFloor(fl) {
+  activeFloor = fl;
+  
+  // Highlight active button
+  document.querySelectorAll('.floor-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.textContent === `Tầng ${fl}`);
+  });
+  
+  recalculateCanvasBoundsForIndoor();
+  drawGraph(currentPath);
+}
+
+function exitIndoorMap() {
+  activeBuilding = null;
+  activeFloor = null;
+  document.getElementById('floor-selector-panel').style.display = 'none';
+  
+  recalculateCanvasBoundsForIndoor();
+  drawGraph(currentPath);
+}
+
+function recalculateCanvasBoundsForIndoor() {
+  if (!activeBuilding || !G) {
+    if (CAMPUS_BOUNDS) {
+      Object.assign(BOUNDS, CAMPUS_BOUNDS);
+    }
+    return;
+  }
+  
+  const buildingNodes = G.nodes.filter(n => n.building === activeBuilding);
+  if (buildingNodes.length === 0) return;
+  
+  const xs = buildingNodes.map(n => n.x);
+  const ys = buildingNodes.map(n => n.y);
+  
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  
+  // Nới rộng bounds 25% để các node không dính mép màn hình
+  const padX = (maxX - minX) * 0.25 || 0.00005;
+  const padY = (maxY - minY) * 0.25 || 0.00005;
+  
+  BOUNDS.minX = minX - padX;
+  BOUNDS.maxX = maxX + padX;
+  BOUNDS.minY = minY - padY;
+  BOUNDS.maxY = maxY + padY;
+}
+
+function checkFloorTransitions() {
+  let popContainer = document.getElementById('transition-popup-container');
+  if (!popContainer) {
+    const mapWrap = document.getElementById('map-wrap');
+    popContainer = document.createElement('div');
+    popContainer.id = 'transition-popup-container';
+    mapWrap.appendChild(popContainer);
+  }
+  
+  popContainer.innerHTML = '';
+  
+  if (!currentPath || currentPath.length === 0 || !G) return;
+  const nm = Object.fromEntries(G.nodes.map(n=>[n.id,n]));
+  
+  for (let i = 0; i < currentPath.length - 1; i++) {
+    const n1 = nm[currentPath[i]];
+    const n2 = nm[currentPath[i+1]];
+    if (!n1 || !n2) continue;
+    
+    // Phát hiện đi thang bộ/máy đổi tầng
+    if (n1.building && n2.building && n1.building === n2.building && n1.floor !== n2.floor) {
+      if (n1.type === 'stairs' || n1.type === 'elevator') {
+        const building = n1.building;
+        const fromFloor = n1.floor;
+        const toFloor = n2.floor;
+        const typeLabel = n1.type === 'stairs' ? 'Cầu thang bộ' : 'Thang máy';
+        const typeIcon = n1.type === 'stairs' ? '🧗' : '🛗';
+        const direction = parseInt(toFloor) > parseInt(fromFloor) || (toFloor !== 'G' && fromFloor === 'G') ? 'lên' : 'xuống';
+        
+        popContainer.innerHTML = `
+          <div class="transition-popup-card">
+            <div class="transition-icon-container">
+              <span style="font-size: 1.5rem;">${typeIcon}</span>
+            </div>
+            <div class="transition-details">
+              <div class="transition-title">Chuyển tầng: ${typeLabel}</div>
+              <div class="transition-subtitle">Đi ${direction} từ Tầng ${fromFloor} sang Tầng ${toFloor} (${building})</div>
+              <button class="transition-ar-btn" onclick="openArCameraOverlay('${building}', '${typeLabel}', '${fromFloor}', '${toFloor}')">
+                📱 Bật AR hướng dẫn
+              </button>
+            </div>
+          </div>
+        `;
+        return; // Chỉ hiện pop-up của chuyển tầng đầu tiên tìm thấy
+      }
+    }
+  }
+}
+
+function openArCameraOverlay(building, typeLabel, fromFloor, toFloor) {
+  const direction = parseInt(toFloor) > parseInt(fromFloor) || (toFloor !== 'G' && fromFloor === 'G') ? 'lên' : 'xuống';
+  const instrText = `Đi ${typeLabel.toLowerCase()} ${direction} Tầng ${toFloor} từ Tầng ${fromFloor} (${building})`;
+  
+  document.getElementById('ar-camera-instruction-text').textContent = instrText;
+  
+  const graphic = document.getElementById('ar-3d-arrow-graphic');
+  if (direction === 'lên') {
+    graphic.className = 'ar-3d-arrow-vertical bounce-up';
+  } else {
+    graphic.className = 'ar-3d-arrow-vertical bounce-down';
+  }
+  
+  document.getElementById('ar-camera-overlay').style.display = 'flex';
+  
+  // Rung phản hồi nếu thiết bị hỗ trợ
+  if (navigator.vibrate) {
+    navigator.vibrate([100, 50, 100]);
+  }
+}
+
+function closeArCameraOverlay() {
+  document.getElementById('ar-camera-overlay').style.display = 'none';
 }
 </script>
 </body>

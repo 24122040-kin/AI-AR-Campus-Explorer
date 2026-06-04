@@ -75,6 +75,7 @@ app = FastAPI(
 )
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/video_graph", StaticFiles(directory="video_graph"), name="video_graph")
 
 G          = build_campus_graph()
 list_nodes = sorted(G.nodes())
@@ -167,6 +168,8 @@ def _default_profile() -> dict:
         "behavior_log":    {},
         "search_history":  [],
         "ratings":         {},
+        "likes":           [],
+        "saves":           [],
         "_last_tracking":  {},
     }
 
@@ -222,9 +225,11 @@ def _bearing_hint(lat1: float, lon1: float, lat2: float, lon2: float) -> str:
 
 
 def _opts_html() -> str:
+    # Lọc chỉ lấy các địa điểm ngoài trời/tòa nhà chính (không lấy phòng/sảnh/thang trong nhà)
+    main_nodes = [n for n in list_nodes if not G.nodes[n].get("is_indoor", False)]
     return "\n".join(
         f'<option value="{n}">{n.replace("_", " ")}</option>'
-        for n in list_nodes
+        for n in main_nodes
     )
 
 
@@ -328,27 +333,57 @@ def api_submit_comment(
     return {"status": "success", "message": f"Đã gửi bình luận cho {node_id}."}
 
 
+@app.post("/api_toggle_like", tags=["Profile"])
+def api_toggle_like(
+    node_id:    str = Query(..., description="Tên địa điểm cần thích"),
+    session_id: Optional[str] = Query(None, description="Session ID của người dùng"),
+):
+    """Toggle thích (tim) địa điểm."""
+    if node_id not in G.nodes:
+        raise HTTPException(status_code=400, detail=f"Node không tồn tại: '{node_id}'")
+    if not session_id or session_id in ("null", "undefined", ""):
+        session_id = "default"
+    return storage.toggle_like(session_id, node_id)
+
+
+@app.post("/api_toggle_save", tags=["Profile"])
+def api_toggle_save(
+    node_id:    str = Query(..., description="Tên địa điểm cần lưu"),
+    session_id: Optional[str] = Query(None, description="Session ID của người dùng"),
+):
+    """Toggle lưu địa điểm."""
+    if node_id not in G.nodes:
+        raise HTTPException(status_code=400, detail=f"Node không tồn tại: '{node_id}'")
+    if not session_id or session_id in ("null", "undefined", ""):
+        session_id = "default"
+    return storage.toggle_save(session_id, node_id)
+
+
 @app.get("/api_trending_locations", tags=["Recommender"])
 def api_trending_locations():
-    """Tính toán và trả về danh sách 13 địa điểm sắp xếp theo lượt đánh giá cao (Trending)."""
+    """Tính toán và trả về danh sách 13 địa điểm sắp xếp theo điểm xu hướng (Trending Score) dựa trên ratings, likes, saves, searches, routes."""
     profiles = storage.get_all_profiles()
-    nodes = list(G.nodes)
+    stats = storage.get_all_location_stats()
+    nodes = [n for n in G.nodes if G.nodes[n].get("type") in ("building", "facility", "admin") and n not in ("ATM", "Nhà điều hành") or n in ("ATM", "Nhà điều hành")]
+    # Bố trí danh sách các điểm hiển thị xu hướng chính của trường học
+    showcase_nodes = ["Căn tin", "Thư viện Tòa D", "Nhà thể dục", "Tòa B", "Tòa A", "Tòa C", "Tòa E", "Tòa F", "Tòa G", "Nhà xe", "ATM", "Nhà điều hành", "Cổng trường"]
+    nodes = [n for n in nodes if n in showcase_nodes]
     
     # Khởi tạo điểm số rating cơ sở (default fallback)
     default_ratings = {
         "Căn tin": 4.5,
         "Thư viện Tòa D": 4.2,
+        "Nhà thể dục": 3.4,
         "Tòa B": 4.0,
         "Tòa A": 3.8,
-        "Tòa E": 3.7,
         "Tòa C": 3.6,
+        "Tòa E": 3.7,
         "Tòa F": 3.5,
-        "Nhà thể dục": 3.4,
+        "Tòa G": 3.0,
+        "Nhà xe": 2.8,
         "ATM": 3.3,
         "Nhà điều hành": 3.2,
-        "Cổng trường": 3.1,
-        "Tòa G": 3.0,
-        "Nhà xe": 2.8
+        "Cổng trường": 3.1
     }
     
     rating_sums = {n: 0.0 for n in nodes}
@@ -369,13 +404,28 @@ def api_trending_locations():
     trending = []
     for n in nodes:
         avg = rating_sums[n] / rating_counts[n] if rating_counts[n] > 0 else 3.0
+        
+        node_stats = stats.get(n, {"likes": 0, "saves": 0, "searches": 0, "routes": 0})
+        likes = node_stats["likes"]
+        saves = node_stats["saves"]
+        searches = node_stats["searches"]
+        routes = node_stats["routes"]
+        
+        # Công thức tính điểm xu hướng: ratings (x100) + likes (x10) + saves (x15) + searches (x2) + routes (x3)
+        score = (avg * 100) + (likes * 10) + (saves * 15) + (searches * 2) + (routes * 3)
+        
         trending.append({
             "node": n,
             "avg_rating": round(avg, 2),
-            "total_ratings": int(rating_counts[n])
+            "total_ratings": int(rating_counts[n]),
+            "likes": likes,
+            "saves": saves,
+            "searches": searches,
+            "routes": routes,
+            "score": round(score, 1)
         })
         
-    trending.sort(key=lambda x: (x["avg_rating"], x["total_ratings"]), reverse=True)
+    trending.sort(key=lambda x: x["score"], reverse=True)
     return {"status": "success", "trending": trending}
 
 
@@ -416,6 +466,9 @@ def get_graph():
             "hours":            f"{G.nodes[n].get('open_time','N/A')} - {G.nodes[n].get('close_time','N/A')}",
             "tagline":          profile.get("tagline", ""),
             "function_summary": profile.get("function_summary", ""),
+            "building":         G.nodes[n].get("building"),
+            "floor":            G.nodes[n].get("floor"),
+            "is_indoor":        G.nodes[n].get("is_indoor", False),
         })
     edges = [
         {
@@ -466,6 +519,9 @@ def get_route(
     path, all_open = multi_stop_routing(G, pts, weather, now, preference=preference)
     if not path:
         raise HTTPException(status_code=404, detail="Không tìm thấy lộ trình.")
+
+    # Tăng thống kê lượt truy cập tìm đường cho điểm đích
+    storage.increment_route_count(pts[-1])
 
     route_coords = []
     for i, n in enumerate(path):
@@ -554,6 +610,9 @@ async def realtime_tracking(
 
     # Lấy profile từ SQLite
     profile = get_session_profile(session_id)
+
+    # Tăng thống kê lượt truy cập tìm đường khi thực hiện tìm đường/tracking đến điểm đích
+    storage.increment_route_count(end)
 
     # ── Ghi lịch sử ghé thăm qua PersonaManager ──────────────────────────
     import time
@@ -815,6 +874,7 @@ async def search_semantic(
     # Trả kết quả theo thứ tự ưu tiên: exact → semantic → function → TF-IDF
     if node:
         gps = G.nodes[node]["gps"]
+        storage.increment_search_count(node)
         return {
             "status": "success", "matched_node": node,
             "is_open": is_node_open(G, node, now),
@@ -825,6 +885,7 @@ async def search_semantic(
     linked = semantic_map_linking(G, query)
     if linked:
         n = linked["node"]
+        storage.increment_search_count(n)
         return {
             "status": "success", "matched_node": n,
             "is_open": is_node_open(G, n, now),
@@ -840,6 +901,7 @@ async def search_semantic(
     )
     if by_func:
         top = by_func[0]
+        storage.increment_search_count(top["node"])
         return {
             "status": "success", "matched_node": top["node"],
             "is_open": True, "score": top["score"],
@@ -854,6 +916,7 @@ async def search_semantic(
     )
     if ranked:
         top = ranked[0]
+        storage.increment_search_count(top["node"])
         return {
             "status": "success", "matched_node": top["node"],
             "is_open": True, "score": top["score"],
