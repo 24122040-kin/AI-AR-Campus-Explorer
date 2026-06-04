@@ -35,10 +35,17 @@ Hệ thống sử dụng cơ chế đề xuất đa nguồn (**Multi-source Fusi
 
 Hệ thống hợp nhất dữ liệu từ 4 nguồn chính để đảm bảo tính chính xác và thời gian thực của các quyết định gợi ý:
 
-[ SQLite: campus_users.db ] ──┐
-[ Campus Graph (Tọa độ/Tiện ích) ] ├─► [ get_smart_recommendations ] ─► Đề xuất tối ưu
-[ Co-visitation Matrix (CF) ] ├──┘
-[ Real-time Sensors (Pin/UV/Time) ] ┘
+```mermaid
+graph LR
+    A[SQLite: campus_users.db] --> E[get_smart_recommendations]
+    B[Campus Graph Tọa độ/Tiện ích] --> E
+    C[Co-visitation Matrix CF] --> E
+    D[Real-time Sensors Pin/UV/Time] --> E
+    E --> F([Đề xuất tối ưu])
+    
+    style E fill:##FFFFFF,stroke:#333,stroke-width:2px
+    style F fill:##FFFFFF,stroke:#333,stroke-width:2px
+```
 
 * **Hồ sơ người dùng cá nhân (`campus_users.db`):** Cơ sở dữ liệu SQLite lưu trữ trường dữ liệu bền vững gồm lịch sử di chuyển (`visited_history`), sở thích (`interests`), vai trò (`role`), đánh giá sao (`ratings`), danh sách yêu thích (`likes`) và đã lưu (`saves`).
 * **Thông tin chi tiết về Địa điểm (Campus Graph):** Các thuộc tính cấu trúc tĩnh và động bao gồm: Tiện ích nội khu (điều hòa, ổ cắm, mức độ tiếng ồn, sức chứa), trạng thái đóng/mở cửa, sự kiện đang diễn ra và tọa độ GPS thực tế.
